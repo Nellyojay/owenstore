@@ -1,6 +1,6 @@
 import { ArrowUpRight, ReceiptText } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { formatAmount, formatDate, todayISO } from '../constants/format'
 import type { AppOutletContext } from '../types'
 
@@ -9,9 +9,14 @@ const labelClass = 'mb-1.5 block text-[10px] font-semibold text-[#656e63]'
 
 export function SalesPage() {
   const { inventory, sales, recordSale } = useOutletContext<AppOutletContext>()
-  const [selectedItemId, setSelectedItemId] = useState(inventory[0]?.id ?? '')
+  const [searchParams] = useSearchParams()
+  const requestedItemId = searchParams.get('item')
+  const initialItemId = inventory.some((item) => item.id === requestedItemId)
+    ? requestedItemId ?? ''
+    : inventory[0]?.id ?? ''
+  const [selectedItemId, setSelectedItemId] = useState(initialItemId)
   const [quantity, setQuantity] = useState(1)
-  const [unitPrice, setUnitPrice] = useState(inventory[0]?.salePrice ?? 0)
+  const [unitPrice, setUnitPrice] = useState(inventory.find((item) => item.id === initialItemId)?.salePrice ?? 0)
   const [date, setDate] = useState(todayISO())
   const [reference, setReference] = useState('')
   const [notice, setNotice] = useState('')

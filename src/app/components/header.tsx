@@ -1,10 +1,11 @@
-import { Boxes, ClipboardList, Gauge, Menu, PackagePlus, Tags, Wrench, X } from 'lucide-react'
+import { Boxes, ClipboardList, Gauge, Menu, PackagePlus, Search, Tags, Wrench, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 
 const navigation = [
   { to: '/', label: 'Overview', icon: Gauge, end: true },
   { to: '/inventory', label: 'Inventory', icon: Boxes },
+  { to: '/products', label: 'Product search', icon: Search },
   { to: '/collections', label: 'Collections', icon: Tags },
   { to: '/sales', label: 'Sales', icon: ClipboardList },
   { to: '/restocks', label: 'Restocks', icon: PackagePlus },

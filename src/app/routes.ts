@@ -4,6 +4,7 @@ import { CollectionsPage } from './pages/collections-page'
 import { InventoryPage } from './pages/inventory-page'
 import { LandingPage } from './pages/landing-page'
 import { NotFoundPage } from './pages/not-found-page'
+import { ProductSearchPage } from './pages/product-search-page'
 import { RestocksPage } from './pages/restocks-page'
 import { SalesPage } from './pages/sales-page'
 
@@ -14,6 +15,7 @@ export const router = createHashRouter([
     children: [
       { index: true, Component: LandingPage },
       { path: 'inventory', Component: InventoryPage },
+      { path: 'products', Component: ProductSearchPage },
       { path: 'collections', Component: CollectionsPage },
       { path: 'sales', Component: SalesPage },
       { path: 'restocks', Component: RestocksPage },

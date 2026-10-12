@@ -1,5 +1,6 @@
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, Boxes, CircleAlert, PackagePlus, Plus, ReceiptText } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
+import { ProductSearchSection } from './product-search-page'
 import type { AppOutletContext } from '../types'
 
 const formatAmount = (amount: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(amount)
@@ -7,7 +8,7 @@ const formatDate = (date: string) => new Intl.DateTimeFormat('en', { month: 'sho
 const todayLabel = new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
 
 export function LandingPage() {
-  const { inventory, restocks, sales, profit } = useOutletContext<AppOutletContext>()
+  const { inventory, restocks, sales } = useOutletContext<AppOutletContext>()
   const lowStockItems = inventory.filter((item) => item.stock <= item.reorderPoint)
   const unitsOnHand = inventory.reduce((total, item) => total + item.stock, 0)
   const stockValue = inventory.reduce((total, item) => total + item.stock * item.unitCost, 0)
@@ -22,37 +23,40 @@ export function LandingPage() {
     { label: 'Reorder needed', value: lowStockItems.length, note: 'At or below minimum', icon: CircleAlert, alert: lowStockItems.length > 0 },
     { label: 'Stock at cost', value: formatAmount(stockValue), note: 'Current inventory value', icon: ArrowDownLeft },
     { label: 'Recorded sales', value: formatAmount(salesValue), note: `${sales.length} transactions`, icon: ArrowUpRight },
-    { label: 'Gross profit', value: formatAmount(profit), note: 'Completed sales · historical costs', icon: ArrowUpRight },
   ]
 
   return (
     <main className="mx-auto max-w-360 px-4 py-7 sm:px-7 sm:py-9 lg:px-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#75816f]">Stockroom overview</p>
-          <h1 className="mt-1 text-[27px] font-semibold tracking-tight text-[#26342b] sm:text-[32px]">Good morning</h1>
-          <p className="mt-1 text-[13px] text-[#737a70]">A clear picture of parts, stock and shop activity.</p>
-        </div>
-        <p className="text-[12px] font-medium text-[#737a70]">{todayLabel}</p>
-      </div>
-
-      <section aria-label="Shop summary" className="mt-7 grid border border-[#e2e5dc] bg-[#fbfcf8] sm:grid-cols-2 xl:grid-cols-5">
-        {metrics.map(({ label, value, note, icon: Icon, alert }) => (
-          <div key={label} className="flex min-h-29 items-start justify-between border-b border-[#e2e5dc] p-4 last:border-b-0 sm:p-5 xl:border-b-0 xl:border-r xl:last:border-r-0">
-            <div>
-              <p className="text-[11px] font-medium text-[#737a70]">{label}</p>
-              <p className={`mt-2 text-[27px] font-semibold tabular-nums tracking-[-0.03em] ${alert ? 'text-[#a85c39]' : 'text-[#26342b]'}`}>{value}</p>
-              <p className="mt-1 text-[10px] text-[#8a9087]">{note}</p>
-            </div>
-            <Icon size={17} strokeWidth={1.7} className={alert ? 'text-[#a85c39]' : 'text-[#75816f]'} />
+      <section className="flex min-h-full flex-col justify-center sm:min-h-[calc(100svh-8rem)] lg:min-h-0">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#75816f]">Stockroom overview</p>
+            <h1 className="mt-1 text-[27px] font-semibold tracking-tight text-[#26342b] sm:text-[32px]">Good morning</h1>
+            <p className="mt-1 text-[13px] text-[#737a70]">A clear picture of parts, stock and shop activity.</p>
           </div>
-        ))}
+          <p className="text-[12px] font-medium text-[#737a70]">{todayLabel}</p>
+        </div>
+
+        <section aria-label="Shop summary" className="mt-5 grid grid-cols-2 border border-[#e2e5dc] bg-[#fbfcf8] xl:grid-cols-5">
+          {metrics.map(({ label, value, note, icon: Icon, alert }) => (
+            <div key={label} className="flex min-h-24 items-start justify-between border-b border-[#e2e5dc] p-3 odd:border-r last:border-b-0 sm:min-h-29 sm:p-5 xl:border-b-0 xl:border-r xl:last:border-r-0">
+              <div>
+                <p className="text-[11px] font-medium text-[#737a70]">{label}</p>
+                <p className={`mt-2 text-[27px] font-semibold tabular-nums tracking-[-0.03em] ${alert ? 'text-[#a85c39]' : 'text-[#26342b]'}`}>{value}</p>
+                <p className="mt-1 text-[10px] text-[#8a9087]">{note}</p>
+              </div>
+              <Icon size={17} strokeWidth={1.7} className={alert ? 'text-[#a85c39]' : 'text-[#75816f]'} />
+            </div>
+          ))}
+        </section>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Link to="/sales" className="inline-flex h-10 items-center gap-2 bg-[#344a35] px-4 text-[12px] font-semibold text-white transition-colors hover:bg-[#293c2b]"><Plus size={15} /> Make sale</Link>
+          <Link to="/restocks" className="inline-flex h-10 items-center gap-2 border border-[#d6dbd0] bg-[#fbfcf8] px-4 text-[12px] font-semibold text-[#39463a] transition-colors hover:bg-[#eef1e9]"><PackagePlus size={15} /> Restock</Link>
+        </div>
       </section>
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <Link to="/sales" className="inline-flex h-10 items-center gap-2 bg-[#344a35] px-4 text-[12px] font-semibold text-white transition-colors hover:bg-[#293c2b]"><Plus size={15} /> Record a sale</Link>
-        <Link to="/restocks" className="inline-flex h-10 items-center gap-2 border border-[#d6dbd0] bg-[#fbfcf8] px-4 text-[12px] font-semibold text-[#39463a] transition-colors hover:bg-[#eef1e9]"><PackagePlus size={15} /> Receive stock</Link>
-      </div>
+      <ProductSearchSection />
 
       <div className="mt-7 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="min-w-0 border border-[#e2e5dc] bg-[#fbfcf8]">
