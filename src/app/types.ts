@@ -12,7 +12,9 @@ export type InventoryItem = {
   lastRestocked: string
 }
 
-export type InventoryInput = Omit<InventoryItem, 'id' | 'lastRestocked'>
+export type InventoryInput = Omit<InventoryItem, 'id' | 'lastRestocked'> & {
+  compatibleMotorcycleModels?: string[]
+}
 
 export type Collection = {
   id: string
@@ -56,6 +58,7 @@ export type AppOutletContext = {
   collections: Collection[]
   restocks: RestockPurchase[]
   sales: SaleRecord[]
+  profit: number
   addItem: (item: InventoryInput) => void
   addCollection: (collection: CollectionInput) => void
   receiveRestock: (purchase: RestockInput) => void

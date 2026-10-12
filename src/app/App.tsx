@@ -1,72 +1,115 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Header } from './components/header'
-import { initialCollections, initialInventory, initialRestocks, initialSales } from './data/data'
-import type { AppOutletContext, CollectionInput, InventoryInput, RestockInput, SaleInput } from './types'
+import { store } from '../data/store'
+import type { Product, Purchase, Sale } from '../data/types'
+import { addProduct } from '../services/productService'
+import { createPurchase } from '../services/purchaseService'
+import { createSale } from '../services/salesService'
+import { calculateProfit } from '../utils/calculations'
+import { generateId } from '../utils/generateId'
+import type { AppOutletContext, CollectionInput, InventoryInput, InventoryItem, RestockInput, RestockPurchase, SaleInput, SaleRecord } from './types'
 
-function readSaved<T>(key: string, fallback: T): T {
-  try {
-    const saved = localStorage.getItem(key)
-    return saved ? (JSON.parse(saved) as T) : fallback
-  } catch {
-    return fallback
+function toInventoryItem(product: Product): InventoryItem {
+  return {
+    id: product.id,
+    sku: product.sku,
+    name: product.name,
+    category: product.category,
+    collectionId: product.categoryId,
+    stock: product.quantity,
+    reorderPoint: product.reorderPoint,
+    unitCost: product.costPrice,
+    salePrice: product.sellingPrice,
+    supplier: product.supplier,
+    lastRestocked: product.lastRestocked,
   }
+}
+
+function toRestockRecords(purchases: Purchase[]): RestockPurchase[] {
+  return purchases.flatMap((purchase) => purchase.items.map((item) => ({
+    id: `${purchase.id}-${item.productId}`,
+    itemId: item.productId,
+    itemName: item.productName,
+    sku: item.sku,
+    supplier: purchase.supplier,
+    quantity: item.quantity,
+    unitPrice: item.unitCost,
+    totalPrice: item.quantity * item.unitCost,
+    date: purchase.date,
+    reference: purchase.reference,
+  })))
+}
+
+function toSaleRecords(sales: Sale[]): SaleRecord[] {
+  return sales.flatMap((sale) => sale.items.map((item) => ({
+    id: `${sale.id}-${item.productId}`,
+    itemId: item.productId,
+    itemName: item.productName,
+    sku: item.sku,
+    quantity: item.quantity,
+    unitPrice: item.sellingPrice,
+    totalPrice: item.quantity * item.sellingPrice,
+    date: sale.date,
+    reference: sale.reference,
+  })))
 }
 
 export function App() {
   const location = useLocation()
-  const [inventory, setInventory] = useState(() => readSaved('owenstore.inventory.v1', initialInventory))
-  const [collections, setCollections] = useState(() => readSaved('owenstore.collections.v1', initialCollections))
-  const [restocks, setRestocks] = useState(() => readSaved('owenstore.restocks.v1', initialRestocks))
-  const [sales, setSales] = useState(() => readSaved('owenstore.sales.v1', initialSales))
+  const [, setStoreVersion] = useState(0)
+  const inventory = store.products.map(toInventoryItem)
+  const collections = store.categories
+  const restocks = toRestockRecords(store.purchases)
+  const sales = toSaleRecords(store.sales)
+  const profit = calculateProfit(store.sales)
+
+  function refreshStore() {
+    setStoreVersion((version) => version + 1)
+  }
 
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [location.pathname])
-  useEffect(() => localStorage.setItem('owenstore.inventory.v1', JSON.stringify(inventory)), [inventory])
-  useEffect(() => localStorage.setItem('owenstore.collections.v1', JSON.stringify(collections)), [collections])
-  useEffect(() => localStorage.setItem('owenstore.restocks.v1', JSON.stringify(restocks)), [restocks])
-  useEffect(() => localStorage.setItem('owenstore.sales.v1', JSON.stringify(sales)), [sales])
 
   function addItem(item: InventoryInput) {
-    setInventory((current) => [{ ...item, id: crypto.randomUUID(), lastRestocked: new Date().toISOString().slice(0, 10) }, ...current])
+    let supplier = store.suppliers.find((entry) => entry.name === item.supplier)
+    if (!supplier) {
+      supplier = { id: generateId('supplier'), name: item.supplier, phone: '', email: '' }
+      store.suppliers.unshift(supplier)
+    }
+    addProduct({
+      sku: item.sku,
+      name: item.name,
+      categoryId: item.collectionId,
+      category: item.category,
+      collectionId: item.collectionId,
+      quantity: item.stock,
+      reorderPoint: item.reorderPoint,
+      costPrice: item.unitCost,
+      sellingPrice: item.salePrice,
+      supplierId: supplier.id,
+      supplier: supplier.name,
+      compatibleMotorcycleModels: item.compatibleMotorcycleModels ?? [],
+      lastRestocked: new Date().toISOString().slice(0, 10),
+    })
+    refreshStore()
   }
 
   function addCollection(collection: CollectionInput) {
-    setCollections((current) => [{ ...collection, id: crypto.randomUUID() }, ...current])
+    store.categories.unshift({ ...collection, id: generateId('category') })
+    refreshStore()
   }
 
   function receiveRestock(input: RestockInput) {
-    const item = inventory.find((entry) => entry.id === input.itemId)
-    if (!item || input.quantity <= 0 || input.unitPrice < 0) return
-
-    setInventory((current) => current.map((entry) => entry.id === item.id
-      ? { ...entry, stock: entry.stock + input.quantity, unitCost: input.unitPrice, lastRestocked: input.date }
-      : entry))
-    setRestocks((current) => [{
-      ...input,
-      id: crypto.randomUUID(),
-      itemName: item.name,
-      sku: item.sku,
-      supplier: item.supplier,
-      totalPrice: input.quantity * input.unitPrice,
-    }, ...current])
+    const purchase = createPurchase({ productId: input.itemId, quantity: input.quantity, unitCost: input.unitPrice, date: input.date, reference: input.reference })
+    if (purchase) refreshStore()
   }
 
   function recordSale(input: SaleInput) {
-    const item = inventory.find((entry) => entry.id === input.itemId)
-    if (!item || input.quantity <= 0 || input.quantity > item.stock || input.unitPrice < 0) return false
-
-    setInventory((current) => current.map((entry) => entry.id === item.id
-      ? { ...entry, stock: entry.stock - input.quantity }
-      : entry))
-    setSales((current) => [{
-      ...input,
-      id: crypto.randomUUID(),
-      itemName: item.name,
-      sku: item.sku,
-      totalPrice: input.quantity * input.unitPrice,
-    }, ...current])
+    const sale = createSale({ productId: input.itemId, quantity: input.quantity, sellingPrice: input.unitPrice, date: input.date, reference: input.reference })
+    if (!sale) return false
+    refreshStore()
     return true
   }
 
@@ -75,6 +118,7 @@ export function App() {
     collections,
     restocks,
     sales,
+    profit,
     addItem,
     addCollection,
     receiveRestock,

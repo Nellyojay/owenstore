@@ -13,6 +13,7 @@ export function InventoryPage() {
   const [collectionFilter, setCollectionFilter] = useState('all')
   const [showForm, setShowForm] = useState(false)
   const [notice, setNotice] = useState('')
+  const [modelsText, setModelsText] = useState('')
   const [draft, setDraft] = useState<InventoryInput>({
     sku: '', name: '', category: 'Engine', collectionId: collections[0]?.id ?? '',
     stock: 0, reorderPoint: 5, unitCost: 0, salePrice: 0, supplier: '',
@@ -26,8 +27,15 @@ export function InventoryPage() {
 
   function submitItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    addItem({ ...draft, sku: draft.sku.trim().toUpperCase(), name: draft.name.trim(), supplier: draft.supplier.trim() })
+    addItem({
+      ...draft,
+      sku: draft.sku.trim().toUpperCase(),
+      name: draft.name.trim(),
+      supplier: draft.supplier.trim(),
+      compatibleMotorcycleModels: modelsText.split(',').map((model) => model.trim()).filter(Boolean),
+    })
     setDraft({ sku: '', name: '', category: 'Engine', collectionId: collections[0]?.id ?? '', stock: 0, reorderPoint: 5, unitCost: 0, salePrice: 0, supplier: '' })
+    setModelsText('')
     setNotice('Part added to inventory.')
     setShowForm(false)
   }
@@ -60,6 +68,7 @@ export function InventoryPage() {
             <label><span className={labelClass}>Unit cost</span><input required min="0" type="number" value={draft.unitCost} onChange={(event) => setDraft({ ...draft, unitCost: Number(event.target.value) })} className={fieldClass} /></label>
             <label><span className={labelClass}>Selling price</span><input required min="0" type="number" value={draft.salePrice} onChange={(event) => setDraft({ ...draft, salePrice: Number(event.target.value) })} className={fieldClass} /></label>
             <label className="sm:col-span-2"><span className={labelClass}>Supplier</span><input required value={draft.supplier} onChange={(event) => setDraft({ ...draft, supplier: event.target.value })} placeholder="Supplier name" className={fieldClass} /></label>
+            <label className="sm:col-span-2"><span className={labelClass}>Compatible motorcycle models</span><input value={modelsText} onChange={(event) => setModelsText(event.target.value)} placeholder="e.g. Honda CG125, Yamaha YBR125" className={fieldClass} /></label>
           </div>
           <div className="mt-4 flex justify-end"><button type="submit" className="h-10 bg-[#344a35] px-5 text-[11px] font-semibold text-white hover:bg-[#293c2b]">Save part</button></div>
         </form>

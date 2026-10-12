@@ -7,7 +7,7 @@ const formatDate = (date: string) => new Intl.DateTimeFormat('en', { month: 'sho
 const todayLabel = new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
 
 export function LandingPage() {
-  const { inventory, restocks, sales } = useOutletContext<AppOutletContext>()
+  const { inventory, restocks, sales, profit } = useOutletContext<AppOutletContext>()
   const lowStockItems = inventory.filter((item) => item.stock <= item.reorderPoint)
   const unitsOnHand = inventory.reduce((total, item) => total + item.stock, 0)
   const stockValue = inventory.reduce((total, item) => total + item.stock * item.unitCost, 0)
@@ -22,6 +22,7 @@ export function LandingPage() {
     { label: 'Reorder needed', value: lowStockItems.length, note: 'At or below minimum', icon: CircleAlert, alert: lowStockItems.length > 0 },
     { label: 'Stock at cost', value: formatAmount(stockValue), note: 'Current inventory value', icon: ArrowDownLeft },
     { label: 'Recorded sales', value: formatAmount(salesValue), note: `${sales.length} transactions`, icon: ArrowUpRight },
+    { label: 'Gross profit', value: formatAmount(profit), note: 'Completed sales · historical costs', icon: ArrowUpRight },
   ]
 
   return (
@@ -35,7 +36,7 @@ export function LandingPage() {
         <p className="text-[12px] font-medium text-[#737a70]">{todayLabel}</p>
       </div>
 
-      <section aria-label="Shop summary" className="mt-7 grid border border-[#e2e5dc] bg-[#fbfcf8] sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Shop summary" className="mt-7 grid border border-[#e2e5dc] bg-[#fbfcf8] sm:grid-cols-2 xl:grid-cols-5">
         {metrics.map(({ label, value, note, icon: Icon, alert }) => (
           <div key={label} className="flex min-h-29 items-start justify-between border-b border-[#e2e5dc] p-4 last:border-b-0 sm:p-5 xl:border-b-0 xl:border-r xl:last:border-r-0">
             <div>
