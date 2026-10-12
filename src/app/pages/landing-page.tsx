@@ -1,138 +1,109 @@
-import { ArrowDown, ArrowRight, ShoppingBag } from "lucide-react";
-import { useState } from "react";
-import { Link, useOutletContext } from "react-router-dom";
-import { products } from "../data/data";
-import type { AppOutletContext } from "../types";
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Boxes, CircleAlert, PackagePlus, Plus, ReceiptText } from 'lucide-react'
+import { Link, useOutletContext } from 'react-router-dom'
+import type { AppOutletContext } from '../types'
 
-const filters = ['Everything', 'Apparel', 'Objects']
+const formatAmount = (amount: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(amount)
+const formatDate = (date: string) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(`${date}T00:00:00`))
+const todayLabel = new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())
 
 export function LandingPage() {
-  const [activeFilter, setActiveFilter] = useState('Everything')
-  const { onAddToBag, searchTerm } = useOutletContext<AppOutletContext>()
+  const { inventory, restocks, sales } = useOutletContext<AppOutletContext>()
+  const lowStockItems = inventory.filter((item) => item.stock <= item.reorderPoint)
+  const unitsOnHand = inventory.reduce((total, item) => total + item.stock, 0)
+  const stockValue = inventory.reduce((total, item) => total + item.stock * item.unitCost, 0)
+  const salesValue = sales.reduce((total, sale) => total + sale.totalPrice, 0)
+  const recentActivity = [
+    ...restocks.map((entry) => ({ ...entry, kind: 'restock' as const })),
+    ...sales.map((entry) => ({ ...entry, kind: 'sale' as const })),
+  ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
 
-  const visibleProducts = products.filter((product) => {
-    const matchesCategory = activeFilter === 'Everything' || product.category === activeFilter
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesCategory && matchesSearch
-  })
+  const metrics = [
+    { label: 'Parts in catalog', value: inventory.length, note: `${unitsOnHand} units on hand`, icon: Boxes },
+    { label: 'Reorder needed', value: lowStockItems.length, note: 'At or below minimum', icon: CircleAlert, alert: lowStockItems.length > 0 },
+    { label: 'Stock at cost', value: formatAmount(stockValue), note: 'Current inventory value', icon: ArrowDownLeft },
+    { label: 'Recorded sales', value: formatAmount(salesValue), note: `${sales.length} transactions`, icon: ArrowUpRight },
+  ]
 
   return (
-    <main id="top">
-      <section className="mx-auto grid max-w-360 gap-8 px-5 pb-16 pt-7 sm:px-8 sm:pb-20 lg:grid-cols-[0.88fr_1.12fr] lg:items-center lg:gap-14 lg:px-14 lg:pb-24 lg:pt-9">
-        <div className="relative z-1 order-2 max-w-135 pb-2 lg:order-1 lg:pb-0">
-          <p className="mb-5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] sm:text-[11px]">
-            <span className="h-2 w-2 rounded-full bg-[#a4bf42]" />
-            Small things, well made
-          </p>
-          <h1 className="font-display text-[clamp(3.5rem,7vw,6.8rem)] leading-[0.91] tracking-[-0.055em]">
-            Make room<br />for <span className="italic text-[#789044]">everyday.</span>
-          </h1>
-          <p className="mt-6 max-w-91.25 text-[14px] leading-7 text-[#193128]/70 sm:text-[15px]">
-            Thoughtful clothes and useful objects for the little rituals that make a life.
-          </p>
-          <Link to="/shop" className="mt-8 inline-flex items-center gap-4 border-b border-[#193128] pb-2 text-[11px] font-bold uppercase tracking-[0.15em] transition-all hover:gap-6">
-            Explore the collection <ArrowRight size={16} strokeWidth={1.8} />
-          </Link>
-          <div className="mt-12 hidden items-center gap-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#193128]/55 lg:flex">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#193128]/20"><ArrowDown size={15} /></span>
-            Made to stay awhile
-          </div>
+    <main className="mx-auto max-w-360 px-4 py-7 sm:px-7 sm:py-9 lg:px-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#75816f]">Stockroom overview</p>
+          <h1 className="mt-1 text-[27px] font-semibold tracking-tight text-[#26342b] sm:text-[32px]">Good morning</h1>
+          <p className="mt-1 text-[13px] text-[#737a70]">A clear picture of parts, stock and shop activity.</p>
         </div>
-        <div className="relative order-1 h-[56vw] min-h-72.5 max-h-165 lg:order-2 lg:h-[min(57vw,660px)]">
-          <img
-            alt="Sunlit, quiet everyday wardrobe in natural fabrics"
-            className="h-full w-full object-cover object-center"
-            src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1800&q=85"
-          />
-          <div className="absolute bottom-4 left-4 bg-[#f8f8f3] px-4 py-3 text-[9px] font-bold uppercase tracking-[0.15em] sm:bottom-6 sm:left-6 sm:px-5 sm:py-4 sm:text-[10px]">
-            <span className="mb-1 block font-normal tracking-[0.08em] text-[#193128]/60">The new collection</span>
-            Made for slower mornings
+        <p className="text-[12px] font-medium text-[#737a70]">{todayLabel}</p>
+      </div>
+
+      <section aria-label="Shop summary" className="mt-7 grid border border-[#e2e5dc] bg-[#fbfcf8] sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(({ label, value, note, icon: Icon, alert }) => (
+          <div key={label} className="flex min-h-29 items-start justify-between border-b border-[#e2e5dc] p-4 last:border-b-0 sm:p-5 xl:border-b-0 xl:border-r xl:last:border-r-0">
+            <div>
+              <p className="text-[11px] font-medium text-[#737a70]">{label}</p>
+              <p className={`mt-2 text-[27px] font-semibold tabular-nums tracking-[-0.03em] ${alert ? 'text-[#a85c39]' : 'text-[#26342b]'}`}>{value}</p>
+              <p className="mt-1 text-[10px] text-[#8a9087]">{note}</p>
+            </div>
+            <Icon size={17} strokeWidth={1.7} className={alert ? 'text-[#a85c39]' : 'text-[#75816f]'} />
           </div>
-          <span className="absolute right-4 top-4 flex h-14 w-14 rotate-12 items-center justify-center rounded-full bg-[#d4f268] text-center text-[8px] font-bold uppercase leading-[1.3] tracking-widest sm:right-6 sm:top-6 sm:h-17 sm:w-17 sm:text-[9px]">New<br />season<br />2026</span>
-        </div>
+        ))}
       </section>
 
-      <section className="border-y border-[#193128]/15 bg-[#eff0e9] px-5 py-4 sm:px-8 lg:px-14">
-        <div className="mx-auto flex max-w-360 flex-wrap items-center justify-between gap-x-8 gap-y-3 text-[9px] font-bold uppercase tracking-[0.16em] sm:text-[10px]">
-          <span>Good materials, no fuss</span><span className="hidden text-[#193128]/35 sm:inline">/</span>
-          <span>Made with intention</span><span className="hidden text-[#193128]/35 sm:inline">/</span>
-          <span>Things you'll reach for</span><span className="hidden text-[#193128]/35 sm:inline">/</span>
-          <span>Less, but better</span>
-        </div>
-      </section>
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <Link to="/sales" className="inline-flex h-10 items-center gap-2 bg-[#344a35] px-4 text-[12px] font-semibold text-white transition-colors hover:bg-[#293c2b]"><Plus size={15} /> Record a sale</Link>
+        <Link to="/restocks" className="inline-flex h-10 items-center gap-2 border border-[#d6dbd0] bg-[#fbfcf8] px-4 text-[12px] font-semibold text-[#39463a] transition-colors hover:bg-[#eef1e9]"><PackagePlus size={15} /> Receive stock</Link>
+      </div>
 
-      <section id="shop" className="mx-auto max-w-360 px-5 py-16 sm:px-8 sm:py-20 lg:px-14 lg:py-24">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-6 sm:mb-10">
-          <div>
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.19em] text-[#789044]">Picked for right now</p>
-            <h2 className="font-display text-4xl leading-none tracking-[-0.04em] sm:text-5xl">The good stuff</h2>
+      <div className="mt-7 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <section className="min-w-0 border border-[#e2e5dc] bg-[#fbfcf8]">
+          <div className="flex items-center justify-between border-b border-[#e2e5dc] px-4 py-4 sm:px-5">
+            <div><h2 className="text-[14px] font-semibold text-[#29362d]">Needs attention</h2><p className="mt-1 text-[11px] text-[#858b82]">Parts at or below their reorder point</p></div>
+            <Link to="/inventory" aria-label="View all inventory" className="flex h-8 w-8 items-center justify-center text-[#626e5e] hover:bg-[#edf0e8]"><ArrowRight size={16} /></Link>
           </div>
-          <div className="flex gap-5 overflow-x-auto text-[10px] font-bold uppercase tracking-[0.12em] sm:gap-7">
-            {filters.map((filter) => (
-              <button
-                key={filter}
-                aria-pressed={activeFilter === filter}
-                className={`shrink-0 border-b pb-2 transition-colors ${activeFilter === filter ? 'border-[#193128] text-[#193128]' : 'border-transparent text-[#193128]/45 hover:text-[#193128]'}`}
-                onClick={() => setActiveFilter(filter)}
-              >
-                {filter}
-              </button>
+          {lowStockItems.length === 0 ? (
+            <p className="px-5 py-8 text-[12px] text-[#737a70]">Every part is above its reorder point.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-135 text-left">
+                <thead className="bg-[#f6f7f3] text-[9px] font-semibold uppercase tracking-widest text-[#838a80]"><tr><th className="px-5 py-3">Part</th><th className="px-4 py-3">SKU</th><th className="px-4 py-3">On hand</th><th className="px-4 py-3">Minimum</th><th className="px-5 py-3"></th></tr></thead>
+                <tbody>
+                  {lowStockItems.slice(0, 5).map((item) => (
+                    <tr key={item.id} className="border-t border-[#eceee8]">
+                      <td className="px-5 py-3 text-[12px] font-medium text-[#364137]">{item.name}</td>
+                      <td className="px-4 py-3 font-mono text-[10px] text-[#7e857b]">{item.sku}</td>
+                      <td className="px-4 py-3"><span className="font-semibold tabular-nums text-[#a85c39]">{item.stock}</span></td>
+                      <td className="px-4 py-3 text-[11px] tabular-nums text-[#737a70]">{item.reorderPoint}</td>
+                      <td className="px-5 py-3 text-right"><Link to={`/restocks?item=${item.id}`} className="text-[10px] font-semibold text-[#526b45] hover:underline">Restock</Link></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="min-w-0 border border-[#e2e5dc] bg-[#fbfcf8]">
+          <div className="flex items-center justify-between border-b border-[#e2e5dc] px-4 py-4 sm:px-5">
+            <div><h2 className="text-[14px] font-semibold text-[#29362d]">Recent activity</h2><p className="mt-1 text-[11px] text-[#858b82]">Latest sales and supplier receipts</p></div>
+            <ReceiptText size={17} className="text-[#75816f]" />
+          </div>
+          <div className="divide-y divide-[#eceee8]">
+            {recentActivity.map((entry) => (
+              <div key={`${entry.kind}-${entry.id}`} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center ${entry.kind === 'sale' ? 'bg-[#f5ece5] text-[#a45b3a]' : 'bg-[#e8eddf] text-[#526b45]'}`}>
+                  {entry.kind === 'sale' ? <ArrowUpRight size={15} /> : <ArrowDownLeft size={15} />}
+                </span>
+                <div className="min-w-0 flex-1"><p className="truncate text-[11px] font-medium text-[#3a443b]">{entry.kind === 'sale' ? 'Sale' : 'Restock'} · {entry.itemName}</p><p className="mt-1 text-[10px] text-[#858b82]">{entry.quantity} units · {formatDate(entry.date)} · {entry.reference}</p></div>
+                <span className="shrink-0 text-[11px] font-semibold tabular-nums text-[#3b453d]">{formatAmount(entry.totalPrice)}</span>
+              </div>
             ))}
+            {recentActivity.length === 0 && <p className="px-5 py-8 text-[12px] text-[#737a70]">No activity recorded yet.</p>}
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-6">
-          {visibleProducts.map((product, index) => (
-            <article key={product.name} className="group">
-              <div className={`relative aspect-[0.79] overflow-hidden ${product.tone}`}>
-                <img
-                  alt={product.name}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                  loading="lazy"
-                  src={`https://images.unsplash.com/${product.image}?auto=format&fit=crop&w=900&q=80`}
-                />
-                {index === 0 && <span className="absolute left-3 top-3 bg-[#d4f268] px-2 py-1 text-[8px] font-bold uppercase tracking-[0.12em] sm:left-4 sm:top-4 sm:px-3 sm:py-1.5">A favorite</span>}
-                <button
-                  aria-label={`Add ${product.name} to bag`}
-                  className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center bg-[#f8f8f3] transition-colors hover:bg-[#d4f268] sm:bottom-4 sm:right-4"
-                  onClick={onAddToBag}
-                >
-                  <ShoppingBag size={17} strokeWidth={1.7} />
-                </button>
-              </div>
-              <div className="flex items-start justify-between gap-2 pt-3 sm:pt-4">
-                <div>
-                  <h3 className="text-[11px] font-semibold sm:text-[13px]">{product.name}</h3>
-                  <p className="mt-1 text-[9px] text-[#193128]/55 sm:text-[11px]">{product.color}</p>
-                </div>
-                <span className="pt-0.5 text-[10px] font-semibold sm:text-[12px]">{product.price}</span>
-              </div>
-            </article>
-          ))}
-          {visibleProducts.length === 0 && <p className="col-span-full py-12 text-sm text-[#193128]/60">No pieces match that search. Try another name.</p>}
-        </div>
-        <div className="mt-12 text-center sm:mt-16">
-          <Link to="/shop" className="inline-flex items-center gap-3 border border-[#193128]/25 px-6 py-3 text-[10px] font-bold uppercase tracking-[0.14em] transition-colors hover:border-[#193128] hover:bg-[#193128] hover:text-[#f8f8f3]">
-            Shop all pieces <ArrowRight size={15} />
-          </Link>
-        </div>
-      </section>
-
-      <section id="story" className="grid bg-[#193128] text-[#f8f8f3] lg:grid-cols-2">
-        <div className="flex min-h-95 flex-col justify-center px-6 py-16 sm:px-12 lg:px-[12%] lg:py-24">
-          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#d4f268]">A note from us</p>
-          <h2 className="max-w-125 font-display text-4xl leading-[1.08] tracking-[-0.035em] sm:text-5xl">Buy fewer things.<br /><span className="italic text-[#d4f268]">Love them longer.</span></h2>
-          <p className="mt-6 max-w-97.5 text-[13px] leading-7 text-white/65">We make small-run pieces with good materials and thoughtful details. No big promises. Just useful things, made to become part of your day.</p>
-          <Link to="/story" className="mt-8 inline-flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.15em] text-[#d4f268]">A little about Owenstore <ArrowRight size={15} /></Link>
-        </div>
-        <div className="min-h-75 lg:min-h-140">
-          <img
-            alt="Natural materials and everyday objects arranged in a calm studio"
-            className="h-full min-h-75 w-full object-cover"
-            loading="lazy"
-            src="https://images.unsplash.com/photo-1449247709967-d4461a6a6103?auto=format&fit=crop&w=1400&q=85"
-          />
-        </div>
-      </section>
+          <div className="flex border-t border-[#eceee8]">
+            <Link to="/sales" className="flex flex-1 items-center justify-between px-5 py-3 text-[10px] font-semibold text-[#526b45] hover:bg-[#f5f6f1]">Sales history <ArrowRight size={14} /></Link>
+            <Link to="/restocks" className="flex flex-1 items-center justify-between border-l border-[#eceee8] px-5 py-3 text-[10px] font-semibold text-[#526b45] hover:bg-[#f5f6f1]">Restock history <ArrowRight size={14} /></Link>
+          </div>
+        </section>
+      </div>
     </main>
   )
 }

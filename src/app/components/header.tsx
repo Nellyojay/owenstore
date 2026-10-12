@@ -1,58 +1,63 @@
-import { Menu, Search, ShoppingBag, X } from "lucide-react"
-import { useState } from "react"
-import { Link, NavLink } from "react-router-dom"
+import { Boxes, ClipboardList, Gauge, Menu, PackagePlus, Tags, Wrench, X } from 'lucide-react'
+import { useState } from 'react'
+import { Link, NavLink } from 'react-router-dom'
 
-function navigationClass({ isActive }: { isActive: boolean }) {
-  return `transition-opacity hover:opacity-55 ${isActive ? 'text-[#789044]' : ''}`
+const navigation = [
+  { to: '/', label: 'Overview', icon: Gauge, end: true },
+  { to: '/inventory', label: 'Inventory', icon: Boxes },
+  { to: '/collections', label: 'Collections', icon: Tags },
+  { to: '/sales', label: 'Sales', icon: ClipboardList },
+  { to: '/restocks', label: 'Restocks', icon: PackagePlus },
+]
+
+function NavigationLinks({ onNavigate }: { onNavigate?: () => void }) {
+  return navigation.map(({ to, label, icon: Icon, end }) => (
+    <NavLink
+      key={to}
+      to={to}
+      end={end}
+      onClick={onNavigate}
+      className={({ isActive }) => `flex min-h-10 items-center gap-3 px-3 text-[13px] font-medium transition-colors ${isActive ? 'bg-[#e8eddf] text-[#344a35]' : 'text-[#646c63] hover:bg-[#f0f1ec] hover:text-[#26352a]'}`}
+    >
+      <Icon size={17} strokeWidth={1.8} />
+      {label}
+    </NavLink>
+  ))
 }
 
-type HeaderProps = {
-  bagCount: number
-  searchOpen: boolean
-  onToggleSearch: () => void
-}
-
-export function Header({ bagCount, searchOpen, onToggleSearch }: HeaderProps) {
+export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <header className="relative z-10 mx-auto flex max-w-360 items-center justify-between px-5 py-5 sm:px-8 lg:px-14">
-      <button
-        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-        className="flex h-10 w-10 items-center justify-center lg:hidden"
-        onClick={() => setMenuOpen(!menuOpen)}
-      >
-        {menuOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-      <nav className="hidden items-center gap-8 text-[12px] font-semibold uppercase tracking-[0.12em] lg:flex">
-        <NavLink className={navigationClass} to="/shop">Shop</NavLink>
-        <NavLink className={navigationClass} to="/story">Our story</NavLink>
-        <NavLink className={navigationClass} to="/journal">Journal</NavLink>
-      </nav>
-      <Link to="/" className="absolute left-1/2 -translate-x-1/2 font-display text-[30px] font-semibold leading-none tracking-[-0.04em]">
-        owen<span className="text-[#789044]">store</span>
-      </Link>
-      <div className="ml-auto flex items-center gap-1 sm:gap-3">
+    <>
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-[#e2e5dc] bg-[#fbfcf8] px-5 py-6 lg:flex">
+        <Link to="/" className="flex items-center gap-3 px-2">
+          <span className="flex h-9 w-9 items-center justify-center bg-[#344a35] text-[#e2efaa]"><Wrench size={19} strokeWidth={1.8} /></span>
+          <span>
+            <span className="block text-[15px] font-bold text-[#29362d]">Owenstore</span>
+            <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[0.15em] text-[#7a8177]">Motorcycle parts</span>
+          </span>
+        </Link>
+        <p className="mb-2 mt-10 px-3 text-[9px] font-bold uppercase tracking-[0.15em] text-[#92988e]">Stockroom</p>
+        <nav className="flex flex-col gap-1"><NavigationLinks /></nav>
+        <div className="mt-auto border-t border-[#e2e5dc] px-3 pt-4">
+          <div className="flex items-center gap-2 text-[11px] font-medium text-[#626b61]"><span className="h-2 w-2 rounded-full bg-[#8ca25c]" />Local inventory</div>
+          <p className="mt-2 text-[10px] leading-5 text-[#92988e]">Changes save in this browser.</p>
+        </div>
+      </aside>
+      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e2e5dc] bg-[#fbfcf8] px-4 lg:hidden">
+        <Link to="/" className="flex items-center gap-2 text-[14px] font-bold text-[#29362d]">
+          <Wrench size={18} className="text-[#526b45]" /> Owenstore
+        </Link>
         <button
-          aria-label={searchOpen ? 'Close search' : 'Open search'}
+          aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
           className="flex h-10 w-10 items-center justify-center"
-          onClick={onToggleSearch}
+          onClick={() => setMenuOpen((open) => !open)}
         >
-          {searchOpen ? <X size={19} strokeWidth={1.7} /> : <Search size={19} strokeWidth={1.7} />}
+          {menuOpen ? <X size={19} strokeWidth={1.8} /> : <Menu size={19} strokeWidth={1.8} />}
         </button>
-        <button aria-label={`Shopping bag, ${bagCount} items`} className="flex h-10 items-center gap-2 px-2 text-[12px] font-semibold uppercase tracking-[0.12em]">
-          <ShoppingBag size={19} strokeWidth={1.7} />
-          <span className="hidden sm:inline">Bag ({bagCount})</span>
-          <span className="sm:hidden">{bagCount}</span>
-        </button>
-      </div>
-      {menuOpen && (
-        <nav className="absolute left-0 right-0 top-full flex flex-col gap-4 border-t border-[#193128]/10 bg-[#f8f8f3] px-6 py-5 text-[12px] font-semibold uppercase tracking-[0.12em] lg:hidden">
-          <NavLink className={navigationClass} to="/shop" onClick={() => setMenuOpen(false)}>Shop</NavLink>
-          <NavLink className={navigationClass} to="/story" onClick={() => setMenuOpen(false)}>Our story</NavLink>
-          <NavLink className={navigationClass} to="/journal" onClick={() => setMenuOpen(false)}>Journal</NavLink>
-        </nav>
-      )}
-    </header>
+        {menuOpen && <nav className="absolute left-0 right-0 top-full border-b border-[#e2e5dc] bg-[#fbfcf8] p-3 shadow-sm"><NavigationLinks onNavigate={() => setMenuOpen(false)} /></nav>}
+      </header>
+    </>
   )
 }
