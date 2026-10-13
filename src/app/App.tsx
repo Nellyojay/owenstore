@@ -8,6 +8,14 @@ import { createPurchase } from '../services/purchaseService'
 import { createSale } from '../services/salesService'
 import { calculateProfit } from '../utils/calculations'
 import { generateId } from '../utils/generateId'
+import {
+  isValidEmail,
+  normalizeDescription,
+  normalizeEmail,
+  normalizeName,
+  normalizePhone,
+  normalizeSearchQuery,
+} from '../utils/inputGuards'
 import type {
   AppOutletContext,
   CollectionInput,
@@ -89,9 +97,9 @@ export function App() {
 
   function addItem(item: InventoryInput) {
     const supplier = store.suppliers.find((entry) => entry.id === item.supplierId)
-    if (!supplier) return
+    if (!supplier || !normalizeName(item.name)) return
     addProduct({
-      name: item.name,
+      name: normalizeName(item.name),
       collectionId: item.collectionId,
       quantity: item.stock,
       reorderPoint: item.reorderPoint,
@@ -99,31 +107,42 @@ export function App() {
       sellingPrice: item.salePrice,
       supplierId: supplier.id,
       supplier: supplier.name,
-      compatibleMotorcycleModels: item.compatibleMotorcycleModels ?? [],
+      compatibleMotorcycleModels: (item.compatibleMotorcycleModels ?? [])
+        .map(normalizeName)
+        .filter(Boolean),
       lastRestocked: new Date().toISOString().slice(0, 10),
     })
     refreshStore()
   }
 
   function addCollection(collection: CollectionInput) {
+    const name = normalizeName(collection.name)
+    if (!name) return
     store.collections.unshift({
-      ...collection,
+      name,
+      description: normalizeDescription(collection.description),
       id: generateId('collection'),
-      abbreviation: formatCollectionAbbreviation(collection.name),
+      abbreviation: formatCollectionAbbreviation(name),
     })
     refreshStore()
   }
 
   function addSupplier(input: SupplierInput) {
-    const name = input.name.trim()
-    if (store.suppliers.some((supplier) => supplier.name.trim().toLowerCase() === name.toLowerCase())) {
+    const name = normalizeName(input.name)
+    const email = normalizeEmail(input.email)
+    if (!name || !isValidEmail(email)) return false
+    if (
+      store.suppliers.some(
+        (supplier) => normalizeSearchQuery(supplier.name) === normalizeSearchQuery(name),
+      )
+    ) {
       return false
     }
     store.suppliers.unshift({
       id: generateId('supplier'),
       name,
-      phone: input.phone.trim(),
-      email: input.email.trim(),
+      phone: normalizePhone(input.phone),
+      email,
     })
     refreshStore()
     return true

@@ -5,6 +5,7 @@ import { DataTable, TransactionPageLayout } from '../components/transaction-page
 import { formatAmount, formatDate, todayISO } from '../constants/format'
 import type { AppOutletContext, RestockPurchase } from '../types'
 import { normalizeNumberInput } from '../../utils/normalizeNumberInput'
+import { normalizeSearchQuery } from '../../utils/inputGuards'
 
 const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
@@ -47,15 +48,14 @@ export function RestocksPage() {
   const selectedSupplier = suppliers.find((supplier) => supplier.id === selectedSupplierId)
   const quantityValue = Number(quantity)
   const unitPriceValue = Number(unitPrice)
-  const normalizedProductQuery = productQuery.trim().toLowerCase()
+  const normalizedProductQuery = normalizeSearchQuery(productQuery)
   const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]))
   const matchingItems = inventory.filter(
     (item) =>
       item.supplierId === selectedSupplierId &&
-      [item.name, item.sku, collectionNames.get(item.collectionId)]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedProductQuery),
+      normalizeSearchQuery(
+        [item.name, item.sku, collectionNames.get(item.collectionId)].join(' '),
+      ).includes(normalizedProductQuery),
   )
   const pendingSupplierId = pendingItems[0]?.supplierId
   const pendingSupplier = suppliers.find((supplier) => supplier.id === pendingSupplierId)

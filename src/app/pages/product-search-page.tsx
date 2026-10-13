@@ -3,13 +3,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { store } from '../../data/store'
 import { formatAmount, formatDate } from '../constants/format'
+import { normalizeName, normalizeSearchQuery } from '../../utils/inputGuards'
 
 const detailLabel = 'text-[9px] font-semibold uppercase tracking-[0.12em] text-[#858b82]'
 const detailValue = 'mt-1 text-[12px] font-medium text-[#344137]'
 
 export function ProductSearchSection() {
   const [query, setQuery] = useState('')
-  const normalizedQuery = query.trim().toLowerCase()
+  const normalizedQuery = normalizeSearchQuery(query)
   const soldQuantities = new Map<string, number>()
 
   for (const sale of store.sales) {
@@ -24,15 +25,13 @@ export function ProductSearchSection() {
     .map((product) => ({ product, quantitySold: soldQuantities.get(product.id) ?? 0 }))
     .filter(({ product }) => {
       const collection = store.collections.find((entry) => entry.id === product.collectionId)?.name ?? ''
-      const searchableContent = [
+      const searchableContent = normalizeSearchQuery([
         product.name,
         product.sku,
         collection,
         product.supplier,
         ...product.compatibleMotorcycleModels,
-      ]
-        .join(' ')
-        .toLowerCase()
+      ].join(' '))
 
       return searchableContent.includes(normalizedQuery)
     })
@@ -67,7 +66,7 @@ export function ProductSearchSection() {
           {normalizedQuery && ' found'}
         </p>
         {normalizedQuery && (
-          <p className="max-w-[60%] truncate text-[11px] text-[#858b82]">“{query.trim()}”</p>
+          <p className="max-w-[60%] truncate text-[11px] text-[#858b82]">“{normalizeName(query)}”</p>
         )}
       </div>
 

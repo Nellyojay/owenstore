@@ -1,7 +1,9 @@
+import { normalizeCode } from './inputGuards'
+
 export function formatSku(abbreviation: string, existingSkus: string[] = []): string {
-  const letters = abbreviation.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)
+  const letters = normalizeCode(abbreviation).replace(/[^A-Z]/g, '').slice(0, 3)
   const prefix = (letters || 'COL').padEnd(3, 'X')
-  const usedSkus = new Set(existingSkus.map((sku) => sku.toUpperCase()))
+  const usedSkus = new Set(existingSkus.map(normalizeCode))
   const randomStart = Math.floor(Math.random() * 10_000)
 
   for (let offset = 0; offset < 10_000; offset += 1) {

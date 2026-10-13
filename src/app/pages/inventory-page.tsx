@@ -4,6 +4,7 @@ import { Link, useOutletContext, useSearchParams } from 'react-router-dom'
 import { formatAmount, formatDate } from '../constants/format'
 import type { AppOutletContext, InventoryInput } from '../types'
 import { normalizeNumberInput } from '../../utils/normalizeNumberInput'
+import { hasRequiredText, normalizeName, normalizeSearchQuery } from '../../utils/inputGuards'
 
 const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
@@ -42,9 +43,9 @@ export function InventoryPage() {
   const visibleItems = useMemo(
     () =>
       inventory.filter((item) => {
-        const query = search.trim().toLowerCase()
+        const query = normalizeSearchQuery(search)
         const matchesSearch =
-          !query || `${item.name} ${item.sku} ${item.supplier}`.toLowerCase().includes(query)
+          !query || normalizeSearchQuery(`${item.name} ${item.sku} ${item.supplier}`).includes(query)
         return (
           matchesSearch && (collectionFilter === 'all' || item.collectionId === collectionFilter)
         )
@@ -54,16 +55,20 @@ export function InventoryPage() {
 
   function submitItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!hasRequiredText(draft.name)) {
+      setNotice('Part name is required.')
+      return
+    }
     addItem({
       ...draft,
       stock: Number(draft.stock),
       reorderPoint: Number(draft.reorderPoint),
       unitCost: Number(draft.unitCost),
       salePrice: Number(draft.salePrice),
-      name: draft.name.trim(),
+      name: draft.name,
       compatibleMotorcycleModels: modelsText
         .split(',')
-        .map((model) => model.trim())
+        .map(normalizeName)
         .filter(Boolean),
     })
     setDraft({

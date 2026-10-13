@@ -2,6 +2,7 @@ import { ArrowRight, Boxes, Plus, Tags, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import type { AppOutletContext } from '../types'
+import { hasRequiredText } from '../../utils/inputGuards'
 
 export function CollectionsPage() {
   const { inventory, collections, addCollection } = useOutletContext<AppOutletContext>()
@@ -12,7 +13,11 @@ export function CollectionsPage() {
 
   function submitCollection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    addCollection({ name: name.trim(), description: description.trim() })
+    if (!hasRequiredText(name)) {
+      setNotice('Collection name is required.')
+      return
+    }
+    addCollection({ name, description })
     setName('')
     setDescription('')
     setShowForm(false)

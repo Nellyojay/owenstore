@@ -2,6 +2,7 @@ import { Plus, Truck, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import type { AppOutletContext } from '../types'
+import { hasRequiredText, isValidEmail, normalizeEmail } from '../../utils/inputGuards'
 
 const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
@@ -18,7 +19,13 @@ export function SuppliersPage() {
 
   function submitSupplier(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const added = addSupplier({ name: name.trim(), phone: phone.trim(), email: email.trim() })
+    const normalizedEmail = normalizeEmail(email)
+    if (!hasRequiredText(name) || !isValidEmail(normalizedEmail)) {
+      setNotice('Enter a supplier name and a valid email address.')
+      setNoticeIsError(true)
+      return
+    }
+    const added = addSupplier({ name, phone, email: normalizedEmail })
     if (!added) {
       setNotice('A supplier with that name already exists.')
       setNoticeIsError(true)

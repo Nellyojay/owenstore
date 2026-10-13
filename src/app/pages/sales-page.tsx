@@ -5,6 +5,7 @@ import { DataTable, TransactionPageLayout } from '../components/transaction-page
 import { formatAmount, formatDate, todayISO } from '../constants/format'
 import type { AppOutletContext, SaleRecord } from '../types'
 import { normalizeNumberInput } from '../../utils/normalizeNumberInput'
+import { normalizeSearchQuery } from '../../utils/inputGuards'
 
 const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
@@ -34,12 +35,12 @@ export function SalesPage() {
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
   const quantityValue = Number(quantity)
   const unitPriceValue = Number(unitPrice)
-  const normalizedProductQuery = productQuery.trim().toLowerCase()
+  const normalizedProductQuery = normalizeSearchQuery(productQuery)
   const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]))
   const matchingItems = inventory.filter((item) =>
-    [item.name, item.sku, collectionNames.get(item.collectionId), item.supplier]
-      .join(' ')
-      .toLowerCase()
+    normalizeSearchQuery(
+      [item.name, item.sku, collectionNames.get(item.collectionId), item.supplier].join(' '),
+    )
       .includes(normalizedProductQuery),
   )
   const totalPrice = quantityValue * unitPriceValue
