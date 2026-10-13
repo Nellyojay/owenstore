@@ -1,6 +1,6 @@
 import { ArrowDownToLine, ArrowUpRight, Plus, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { Link, useOutletContext, useSearchParams } from 'react-router-dom'
 import { formatAmount, formatDate } from '../constants/format'
 import type { AppOutletContext, InventoryInput } from '../types'
 import { normalizeNumberInput } from '../../utils/normalizeNumberInput'
@@ -18,14 +18,20 @@ type InventoryDraft = Omit<InventoryInput, 'stock' | 'reorderPoint' | 'unitCost'
 
 export function InventoryPage() {
   const { inventory, collections, suppliers, addItem } = useOutletContext<AppOutletContext>()
+  const [searchParams] = useSearchParams()
+  const requestedCollectionId = searchParams.get('collection')
+  const collectionFromLink = collections.find(
+    (collection) => collection.id === requestedCollectionId,
+  )?.id
+  const defaultCollectionId = collectionFromLink ?? collections[0]?.id ?? ''
   const [search, setSearch] = useState('')
-  const [collectionFilter, setCollectionFilter] = useState('all')
+  const [collectionFilter, setCollectionFilter] = useState(() => collectionFromLink ?? 'all')
   const [showForm, setShowForm] = useState(false)
   const [notice, setNotice] = useState('')
   const [modelsText, setModelsText] = useState('')
   const [draft, setDraft] = useState<InventoryDraft>({
     name: '',
-    collectionId: collections[0]?.id ?? '',
+    collectionId: defaultCollectionId,
     supplierId: suppliers[0]?.id ?? '',
     stock: '',
     reorderPoint: '',
@@ -62,7 +68,7 @@ export function InventoryPage() {
     })
     setDraft({
       name: '',
-      collectionId: collections[0]?.id ?? '',
+      collectionId: defaultCollectionId,
       supplierId: suppliers[0]?.id ?? '',
       stock: '',
       reorderPoint: '',

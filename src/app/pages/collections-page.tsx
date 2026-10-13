@@ -124,7 +124,7 @@ export function CollectionsPage() {
                 </span>
               </div>
               <Link
-                to="/inventory"
+                to={`/inventory?collection=${encodeURIComponent(collection.id)}`}
                 className="mt-4 flex items-center justify-between border-t border-[#eceee8] pt-3 text-[10px] font-semibold text-[#526b45] hover:text-[#344a35]"
               >
                 View inventory <ArrowRight size={14} />
