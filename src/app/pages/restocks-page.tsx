@@ -1,4 +1,4 @@
-import { ArrowDownLeft, PackagePlus, Search } from 'lucide-react'
+import { ArrowDownLeft, PackagePlus, Plus, Search, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { DataTable, TransactionPageLayout } from '../components/transaction-page'
@@ -10,13 +10,24 @@ const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
 const labelClass = 'mb-1.5 block text-[10px] font-semibold text-[#656e63]'
 
+type PendingRestockItem = {
+  productId: string
+  productName: string
+  sku: string
+  supplierId: string
+  supplier: string
+  quantity: number
+  unitPrice: number
+}
+
 export function RestocksPage() {
-  const { inventory, collections, restocks, receiveRestock } = useOutletContext<AppOutletContext>()
+  const { inventory, collections, suppliers, restocks, receiveRestock } =
+    useOutletContext<AppOutletContext>()
   const [searchParams] = useSearchParams()
   const requestedItemId = searchParams.get('item')
-  const initialItemId = inventory.some((item) => item.id === requestedItemId)
-    ? (requestedItemId ?? '')
-    : (inventory[0]?.id ?? '')
+  const requestedItem = inventory.find((item) => item.id === requestedItemId)
+  const initialItemId = requestedItem?.id ?? ''
+  const [selectedSupplierId, setSelectedSupplierId] = useState(requestedItem?.supplierId ?? '')
   const [selectedItemId, setSelectedItemId] = useState(initialItemId)
   const [productQuery, setProductQuery] = useState(
     inventory.find((item) => item.id === initialItemId)?.name ?? '',
@@ -30,23 +41,36 @@ export function RestocksPage() {
   })
   const [date, setDate] = useState(todayISO())
   const [notice, setNotice] = useState('')
+  const [noticeIsError, setNoticeIsError] = useState(false)
+  const [pendingItems, setPendingItems] = useState<PendingRestockItem[]>([])
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
+  const selectedSupplier = suppliers.find((supplier) => supplier.id === selectedSupplierId)
   const quantityValue = Number(quantity)
   const unitPriceValue = Number(unitPrice)
   const normalizedProductQuery = productQuery.trim().toLowerCase()
   const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]))
-  const matchingItems = inventory.filter((item) =>
-    [item.name, item.sku, collectionNames.get(item.collectionId), item.supplier]
-      .join(' ')
-      .toLowerCase()
-      .includes(normalizedProductQuery),
+  const matchingItems = inventory.filter(
+    (item) =>
+      item.supplierId === selectedSupplierId &&
+      [item.name, item.sku, collectionNames.get(item.collectionId)]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedProductQuery),
   )
-  const totalPrice = quantityValue * unitPriceValue
+  const pendingSupplierId = pendingItems[0]?.supplierId
+  const pendingSupplier = suppliers.find((supplier) => supplier.id === pendingSupplierId)
+  const hasSupplierMismatch = Boolean(
+    pendingSupplierId && selectedItem && pendingSupplierId !== selectedItem.supplierId,
+  )
+  const totalPrice = pendingItems.reduce(
+    (total, item) => total + item.quantity * item.unitPrice,
+    0,
+  )
   const totalSpent = restocks.reduce((sum, entry) => sum + entry.totalPrice, 0)
 
   function selectProduct(itemId: string) {
     const item = inventory.find((inventoryItem) => inventoryItem.id === itemId)
-    if (!item) return
+    if (!item || item.supplierId !== selectedSupplierId) return
 
     setSelectedItemId(item.id)
     setProductQuery(item.name)
@@ -55,19 +79,49 @@ export function RestocksPage() {
     setActiveProductIndex(-1)
   }
 
+  function addPendingItem() {
+    if (!selectedItem || quantityValue <= 0 || !unitPrice.trim() || unitPriceValue < 0) return
+    if (hasSupplierMismatch) {
+      setNotice(`Add items from ${pendingSupplier} to this restock.`)
+      setNoticeIsError(true)
+      return
+    }
+
+    setPendingItems((items) => [
+      ...items,
+      {
+        productId: selectedItem.id,
+        productName: selectedItem.name,
+        sku: selectedItem.sku,
+        supplierId: selectedItem.supplierId,
+        supplier: selectedItem.supplier,
+        quantity: quantityValue,
+        unitPrice: unitPriceValue,
+      },
+    ])
+    setQuantity('')
+    setProductQuery('')
+    setUnitPrice('')
+    setNotice('Item added to this restock.')
+    setNoticeIsError(false)
+  }
+
   function submitRestock(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!selectedItem || quantityValue <= 0 || unitPriceValue < 0) return
+    if (pendingItems.length === 0) return
     receiveRestock({
-      itemId: selectedItem.id,
-      quantity: quantityValue,
-      unitPrice: unitPriceValue,
+      items: pendingItems.map((item) => ({
+        itemId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
       date,
     })
     setNotice(
-      `${quantityValue} units of ${selectedItem.name} received. Total: ${formatAmount(totalPrice)}.`,
+      `${pendingItems.length} item${pendingItems.length === 1 ? '' : 's'} restocked. Total: ${formatAmount(totalPrice)}.`,
     )
-    setQuantity('')
+    setNoticeIsError(false)
+    setPendingItems([])
   }
 
   return (
@@ -79,6 +133,34 @@ export function RestocksPage() {
       formDescription="Stock increases when you save the receipt."
       formContent={
         <form onSubmit={submitRestock} className="space-y-3 p-4">
+          <label>
+            <span className={labelClass}>Supplier</span>
+            <select
+              required
+              value={selectedSupplierId}
+              disabled={pendingItems.length > 0}
+              onChange={(event) => {
+                setSelectedSupplierId(event.target.value)
+                setSelectedItemId('')
+                setProductQuery('')
+                setUnitPrice('')
+                setIsProductMenuOpen(false)
+              }}
+              className={fieldClass}
+            >
+              <option value="">Select supplier</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
+            {pendingItems.length > 0 && selectedSupplier && (
+              <span className="mt-1 block text-[10px] text-[#737a70]">
+                This restock is for {selectedSupplier.name}.
+              </span>
+            )}
+          </label>
           <div className="relative">
             <label htmlFor="restock-product-search" className={labelClass}>
               Part
@@ -92,7 +174,6 @@ export function RestocksPage() {
               <input
                 id="restock-product-search"
                 type="text"
-                required
                 role="combobox"
                 autoComplete="off"
                 aria-autocomplete="list"
@@ -104,6 +185,7 @@ export function RestocksPage() {
                     : undefined
                 }
                 value={productQuery}
+                disabled={!selectedSupplierId}
                 onFocus={() => {
                   setIsProductMenuOpen(true)
                   setActiveProductIndex(matchingItems.length > 0 ? 0 : -1)
@@ -140,7 +222,9 @@ export function RestocksPage() {
                     setActiveProductIndex(-1)
                   }
                 }}
-                placeholder="Search by name, SKU, collection, or supplier"
+                placeholder={
+                  selectedSupplier ? `Search ${selectedSupplier.name} items` : 'Select a supplier first'
+                }
                 className={`${fieldClass} pl-9`}
               />
             </div>
@@ -150,7 +234,11 @@ export function RestocksPage() {
                 role="listbox"
                 className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto border border-[#dfe3da] bg-white py-1 shadow-lg"
               >
-                {matchingItems.length > 0 ? (
+                {!selectedSupplierId ? (
+                  <li className="px-3 py-3 text-[11px] text-[#737a70]" role="option" aria-selected="false">
+                    Select a supplier to see its items.
+                  </li>
+                ) : matchingItems.length > 0 ? (
                   matchingItems.map((item, index) => (
                     <li key={item.id} role="presentation">
                       <button
@@ -183,7 +271,7 @@ export function RestocksPage() {
                     role="option"
                     aria-selected="false"
                   >
-                    No matching products
+                    No matching items for {selectedSupplier?.name}.
                   </li>
                 )}
               </ul>
@@ -193,7 +281,6 @@ export function RestocksPage() {
             <label>
               <span className={labelClass}>Quantity received</span>
               <input
-                required
                 min="1"
                 step="1"
                 type="number"
@@ -206,7 +293,6 @@ export function RestocksPage() {
             <label>
               <span className={labelClass}>Unit purchase cost</span>
               <input
-                required
                 min="0"
                 step="any"
                 type="number"
@@ -217,6 +303,59 @@ export function RestocksPage() {
               />
             </label>
           </div>
+          <button
+            type="button"
+            onClick={addPendingItem}
+            disabled={!selectedSupplierId || !selectedItem || quantityValue < 1 || !unitPrice.trim() || unitPriceValue < 0 || hasSupplierMismatch}
+            className="flex h-9 w-full items-center justify-center gap-2 border border-[#dfe3da] text-[11px] font-semibold text-[#526b45] hover:bg-[#f3f5ef] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Plus size={14} /> Add item to restock
+          </button>
+          {pendingItems.length > 0 && (
+            <section className="border border-[#e2e5dc] bg-white">
+              <div className="flex items-center justify-between border-b border-[#eceee8] px-3 py-2">
+                <div>
+                  <h3 className="text-[11px] font-semibold text-[#364137]">Items to record</h3>
+                  <p className="mt-0.5 text-[10px] text-[#737a70]">
+                    Supplier: {pendingSupplier?.name}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-[#737a70]">{pendingItems.length} items</span>
+                  <button
+                    type="button"
+                    onClick={() => setPendingItems([])}
+                    className="inline-flex h-7 items-center gap-1.5 px-2 text-[10px] font-semibold text-[#a85c39] hover:bg-[#fbf0ea]"
+                  >
+                    <Trash2 size={12} /> Clear items
+                  </button>
+                </div>
+              </div>
+              <ul className="divide-y divide-[#eceee8]">
+                {pendingItems.map((item, index) => (
+                  <li key={`${item.productId}-${index}`} className="flex items-center gap-3 px-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] font-medium text-[#364137]">{item.productName}</p>
+                      <p className="mt-0.5 font-mono text-[9px] text-[#858b82]">
+                        {item.sku} · {item.quantity} × {formatAmount(item.unitPrice)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-semibold tabular-nums text-[#364137]">
+                      {formatAmount(item.quantity * item.unitPrice)}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${item.productName}`}
+                      onClick={() => setPendingItems((items) => items.filter((_, i) => i !== index))}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center text-[#858b82] hover:bg-[#f3f5ef] hover:text-[#a85c39]"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <div className="grid gap-3">
             <label>
               <span className={labelClass}>Date received</span>
@@ -239,16 +378,16 @@ export function RestocksPage() {
             <p className="pb-1 text-[10px] text-[#858b82]">{selectedItem?.supplier}</p>
           </div>
           <button
-            disabled={!selectedItem || quantityValue < 1 || unitPriceValue < 0}
+            disabled={pendingItems.length === 0}
             type="submit"
             className="flex h-10 w-full items-center justify-center gap-2 bg-[#344a35] text-[11px] font-semibold text-white hover:bg-[#293c2b] disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <PackagePlus size={15} /> Save restock
+            <PackagePlus size={15} /> Record restock
           </button>
           {notice && (
             <p
               role="status"
-              className="border border-[#d5e2cb] bg-[#edf3e8] px-3 py-2 text-[11px] text-[#435b3d]"
+              className={`border px-3 py-2 text-[11px] ${noticeIsError ? 'border-[#e7c8b7] bg-[#fbf0ea] text-[#975334]' : 'border-[#d5e2cb] bg-[#edf3e8] text-[#435b3d]'}`}
             >
               {notice}
             </p>

@@ -17,6 +17,7 @@ import type {
   RestockPurchase,
   SaleInput,
   SaleRecord,
+  SupplierInput,
 } from './types'
 import { formatCollectionAbbreviation } from '../utils/formatCollectionAbbreviation'
 
@@ -26,6 +27,7 @@ function toInventoryItem(product: Product): InventoryItem {
     sku: product.sku,
     name: product.name,
     collectionId: product.collectionId,
+    supplierId: product.supplierId,
     stock: product.quantity,
     reorderPoint: product.reorderPoint,
     unitCost: product.costPrice,
@@ -37,8 +39,8 @@ function toInventoryItem(product: Product): InventoryItem {
 
 function toRestockRecords(purchases: Purchase[]): RestockPurchase[] {
   return purchases.flatMap((purchase) =>
-    purchase.items.map((item) => ({
-      id: `${purchase.id}-${item.productId}`,
+    purchase.items.map((item, index) => ({
+      id: `${purchase.id}-${index}`,
       itemId: item.productId,
       itemName: item.productName,
       sku: item.sku,
@@ -86,11 +88,8 @@ export function App() {
   }, [location.pathname])
 
   function addItem(item: InventoryInput) {
-    let supplier = store.suppliers.find((entry) => entry.name === item.supplier)
-    if (!supplier) {
-      supplier = { id: generateId('supplier'), name: item.supplier, phone: '', email: '' }
-      store.suppliers.unshift(supplier)
-    }
+    const supplier = store.suppliers.find((entry) => entry.id === item.supplierId)
+    if (!supplier) return
     addProduct({
       name: item.name,
       collectionId: item.collectionId,
@@ -115,11 +114,28 @@ export function App() {
     refreshStore()
   }
 
+  function addSupplier(input: SupplierInput) {
+    const name = input.name.trim()
+    if (store.suppliers.some((supplier) => supplier.name.trim().toLowerCase() === name.toLowerCase())) {
+      return false
+    }
+    store.suppliers.unshift({
+      id: generateId('supplier'),
+      name,
+      phone: input.phone.trim(),
+      email: input.email.trim(),
+    })
+    refreshStore()
+    return true
+  }
+
   function receiveRestock(input: RestockInput) {
     const purchase = createPurchase({
-      productId: input.itemId,
-      quantity: input.quantity,
-      unitCost: input.unitPrice,
+      items: input.items.map((item) => ({
+        productId: item.itemId,
+        quantity: item.quantity,
+        unitCost: item.unitPrice,
+      })),
       date: input.date,
     })
     if (purchase) refreshStore()
@@ -140,11 +156,13 @@ export function App() {
   const outletContext: AppOutletContext = {
     inventory,
     collections,
+    suppliers: store.suppliers,
     restocks,
     sales,
     profit,
     addItem,
     addCollection,
+    addSupplier,
     receiveRestock,
     recordSale,
   }

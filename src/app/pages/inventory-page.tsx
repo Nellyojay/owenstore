@@ -17,7 +17,7 @@ type InventoryDraft = Omit<InventoryInput, 'stock' | 'reorderPoint' | 'unitCost'
 }
 
 export function InventoryPage() {
-  const { inventory, collections, addItem } = useOutletContext<AppOutletContext>()
+  const { inventory, collections, suppliers, addItem } = useOutletContext<AppOutletContext>()
   const [search, setSearch] = useState('')
   const [collectionFilter, setCollectionFilter] = useState('all')
   const [showForm, setShowForm] = useState(false)
@@ -26,11 +26,11 @@ export function InventoryPage() {
   const [draft, setDraft] = useState<InventoryDraft>({
     name: '',
     collectionId: collections[0]?.id ?? '',
+    supplierId: suppliers[0]?.id ?? '',
     stock: '',
     reorderPoint: '',
     unitCost: '',
     salePrice: '',
-    supplier: '',
   })
 
   const visibleItems = useMemo(
@@ -55,7 +55,6 @@ export function InventoryPage() {
       unitCost: Number(draft.unitCost),
       salePrice: Number(draft.salePrice),
       name: draft.name.trim(),
-      supplier: draft.supplier.trim(),
       compatibleMotorcycleModels: modelsText
         .split(',')
         .map((model) => model.trim())
@@ -64,11 +63,11 @@ export function InventoryPage() {
     setDraft({
       name: '',
       collectionId: collections[0]?.id ?? '',
+      supplierId: suppliers[0]?.id ?? '',
       stock: '',
       reorderPoint: '',
       unitCost: '',
       salePrice: '',
-      supplier: '',
     })
     setModelsText('')
     setNotice('Part added to inventory.')
@@ -206,13 +205,24 @@ export function InventoryPage() {
             </label>
             <label className="sm:col-span-2">
               <span className={labelClass}>Supplier</span>
-              <input
+              <select
                 required
-                value={draft.supplier}
-                onChange={(event) => setDraft({ ...draft, supplier: event.target.value })}
-                placeholder="Supplier name"
+                value={draft.supplierId}
+                onChange={(event) => setDraft({ ...draft, supplierId: event.target.value })}
                 className={fieldClass}
-              />
+              >
+                <option value="">Select supplier</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+              </select>
+              {suppliers.length === 0 && (
+                <span className="mt-1 block text-[10px] text-[#a85c39]">
+                  Create a supplier before adding a part.
+                </span>
+              )}
             </label>
             <label className="sm:col-span-2">
               <span className={labelClass}>Compatible motorcycle models</span>

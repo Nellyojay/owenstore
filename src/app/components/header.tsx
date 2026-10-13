@@ -6,6 +6,7 @@ import {
   PackagePlus,
   Search,
   Tags,
+  Truck,
   Wrench,
   X,
 } from 'lucide-react'
@@ -17,6 +18,7 @@ const navigation = [
   { to: '/inventory', label: 'Inventory', icon: Boxes },
   { to: '/products', label: 'Product search', icon: Search },
   { to: '/collections', label: 'Collections', icon: Tags },
+  { to: '/suppliers', label: 'Suppliers', icon: Truck },
   { to: '/sales', label: 'Sales', icon: ClipboardList },
   { to: '/restocks', label: 'Restocks', icon: PackagePlus },
 ]
