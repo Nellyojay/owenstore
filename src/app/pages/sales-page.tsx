@@ -4,6 +4,7 @@ import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { DataTable, TransactionPageLayout } from '../components/transaction-page'
 import { formatAmount, formatDate, todayISO } from '../constants/format'
 import type { AppOutletContext, SaleRecord } from '../types'
+import { normalizeNumberInput } from '../../utils/normalizeNumberInput'
 
 const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
@@ -22,15 +23,18 @@ export function SalesPage() {
   )
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false)
   const [activeProductIndex, setActiveProductIndex] = useState(-1)
-  const [quantity, setQuantity] = useState(1)
-  const [unitPrice, setUnitPrice] = useState(
-    inventory.find((item) => item.id === initialItemId)?.salePrice ?? 0,
-  )
+  const [quantity, setQuantity] = useState('')
+  const [unitPrice, setUnitPrice] = useState(() => {
+    const price = inventory.find((item) => item.id === initialItemId)?.salePrice ?? 0
+    return price > 0 ? String(price) : ''
+  })
   const [date, setDate] = useState(todayISO())
   const [reference, setReference] = useState('')
   const [notice, setNotice] = useState('')
   const [noticeIsError, setNoticeIsError] = useState(false)
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
+  const quantityValue = Number(quantity)
+  const unitPriceValue = Number(unitPrice)
   const normalizedProductQuery = productQuery.trim().toLowerCase()
   const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]))
   const matchingItems = inventory.filter((item) =>
@@ -39,7 +43,7 @@ export function SalesPage() {
       .toLowerCase()
       .includes(normalizedProductQuery),
   )
-  const totalPrice = quantity * unitPrice
+  const totalPrice = quantityValue * unitPriceValue
   const salesTotal = sales.reduce((sum, sale) => sum + sale.totalPrice, 0)
 
   function selectProduct(itemId: string) {
@@ -48,7 +52,7 @@ export function SalesPage() {
 
     setSelectedItemId(item.id)
     setProductQuery(item.name)
-    setUnitPrice(item.salePrice)
+    setUnitPrice(item.salePrice > 0 ? String(item.salePrice) : '')
     setIsProductMenuOpen(false)
     setActiveProductIndex(-1)
   }
@@ -56,22 +60,22 @@ export function SalesPage() {
   function submitSale(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!selectedItem) return
-    if (quantity <= 0 || quantity > selectedItem.stock) {
+    if (quantityValue <= 0 || quantityValue > selectedItem.stock) {
       setNotice(`Only ${selectedItem.stock} units are available.`)
       setNoticeIsError(true)
       return
     }
     const saved = recordSale({
       itemId: selectedItem.id,
-      quantity,
-      unitPrice,
+      quantity: quantityValue,
+      unitPrice: unitPriceValue,
       date,
       reference: reference.trim() || 'Counter sale',
     })
     if (!saved) return
-    setNotice(`${quantity} × ${selectedItem.name} recorded. Total: ${formatAmount(totalPrice)}.`)
+    setNotice(`${quantityValue} × ${selectedItem.name} recorded. Total: ${formatAmount(totalPrice)}.`)
     setNoticeIsError(false)
-    setQuantity(1)
+    setQuantity('')
     setReference('')
   }
 
@@ -117,7 +121,7 @@ export function SalesPage() {
                 onChange={(event) => {
                   setProductQuery(event.target.value)
                   setSelectedItemId('')
-                  setUnitPrice(0)
+                  setUnitPrice('')
                   setIsProductMenuOpen(true)
                   setActiveProductIndex(0)
                 }}
@@ -204,7 +208,8 @@ export function SalesPage() {
                 step="1"
                 type="number"
                 value={quantity}
-                onChange={(event) => setQuantity(Number(event.target.value))}
+                placeholder="1"
+                onChange={(event) => setQuantity(normalizeNumberInput(event.target.value))}
                 className={fieldClass}
               />
             </label>
@@ -216,7 +221,8 @@ export function SalesPage() {
                 step="any"
                 type="number"
                 value={unitPrice}
-                onChange={(event) => setUnitPrice(Number(event.target.value))}
+                placeholder="0.00"
+                onChange={(event) => setUnitPrice(normalizeNumberInput(event.target.value))}
                 className={fieldClass}
               />
             </label>
@@ -254,9 +260,9 @@ export function SalesPage() {
           <button
             disabled={
               !selectedItem ||
-              quantity < 1 ||
-              quantity > (selectedItem?.stock ?? 0) ||
-              unitPrice < 0
+              quantityValue < 1 ||
+              quantityValue > (selectedItem?.stock ?? 0) ||
+              unitPriceValue < 0
             }
             type="submit"
             className="flex h-10 w-full items-center justify-center gap-2 bg-[#344a35] text-[11px] font-semibold text-white hover:bg-[#293c2b] disabled:cursor-not-allowed disabled:opacity-45"

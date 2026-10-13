@@ -4,6 +4,7 @@ import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { DataTable, TransactionPageLayout } from '../components/transaction-page'
 import { formatAmount, formatDate, todayISO } from '../constants/format'
 import type { AppOutletContext, RestockPurchase } from '../types'
+import { normalizeNumberInput } from '../../utils/normalizeNumberInput'
 
 const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
@@ -22,14 +23,17 @@ export function RestocksPage() {
   )
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false)
   const [activeProductIndex, setActiveProductIndex] = useState(-1)
-  const [quantity, setQuantity] = useState(1)
-  const [unitPrice, setUnitPrice] = useState(
-    inventory.find((item) => item.id === initialItemId)?.unitCost ?? 0,
-  )
+  const [quantity, setQuantity] = useState('')
+  const [unitPrice, setUnitPrice] = useState(() => {
+    const price = inventory.find((item) => item.id === initialItemId)?.unitCost ?? 0
+    return price > 0 ? String(price) : ''
+  })
   const [date, setDate] = useState(todayISO())
   const [reference, setReference] = useState('')
   const [notice, setNotice] = useState('')
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
+  const quantityValue = Number(quantity)
+  const unitPriceValue = Number(unitPrice)
   const normalizedProductQuery = productQuery.trim().toLowerCase()
   const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]))
   const matchingItems = inventory.filter((item) =>
@@ -38,7 +42,7 @@ export function RestocksPage() {
       .toLowerCase()
       .includes(normalizedProductQuery),
   )
-  const totalPrice = quantity * unitPrice
+  const totalPrice = quantityValue * unitPriceValue
   const totalSpent = restocks.reduce((sum, entry) => sum + entry.totalPrice, 0)
 
   function selectProduct(itemId: string) {
@@ -47,25 +51,25 @@ export function RestocksPage() {
 
     setSelectedItemId(item.id)
     setProductQuery(item.name)
-    setUnitPrice(item.unitCost)
+    setUnitPrice(item.unitCost > 0 ? String(item.unitCost) : '')
     setIsProductMenuOpen(false)
     setActiveProductIndex(-1)
   }
 
   function submitRestock(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!selectedItem || quantity <= 0 || unitPrice < 0) return
+    if (!selectedItem || quantityValue <= 0 || unitPriceValue < 0) return
     receiveRestock({
       itemId: selectedItem.id,
-      quantity,
-      unitPrice,
+      quantity: quantityValue,
+      unitPrice: unitPriceValue,
       date,
       reference: reference.trim() || 'Stock receipt',
     })
     setNotice(
-      `${quantity} units of ${selectedItem.name} received. Total: ${formatAmount(totalPrice)}.`,
+      `${quantityValue} units of ${selectedItem.name} received. Total: ${formatAmount(totalPrice)}.`,
     )
-    setQuantity(1)
+    setQuantity('')
     setReference('')
   }
 
@@ -111,7 +115,7 @@ export function RestocksPage() {
                 onChange={(event) => {
                   setProductQuery(event.target.value)
                   setSelectedItemId('')
-                  setUnitPrice(0)
+                  setUnitPrice('')
                   setIsProductMenuOpen(true)
                   setActiveProductIndex(0)
                 }}
@@ -197,7 +201,8 @@ export function RestocksPage() {
                 step="1"
                 type="number"
                 value={quantity}
-                onChange={(event) => setQuantity(Number(event.target.value))}
+                placeholder="1"
+                onChange={(event) => setQuantity(normalizeNumberInput(event.target.value))}
                 className={fieldClass}
               />
             </label>
@@ -209,7 +214,8 @@ export function RestocksPage() {
                 step="any"
                 type="number"
                 value={unitPrice}
-                onChange={(event) => setUnitPrice(Number(event.target.value))}
+                placeholder="0.00"
+                onChange={(event) => setUnitPrice(normalizeNumberInput(event.target.value))}
                 className={fieldClass}
               />
             </label>
@@ -245,7 +251,7 @@ export function RestocksPage() {
             <p className="pb-1 text-[10px] text-[#858b82]">{selectedItem?.supplier}</p>
           </div>
           <button
-            disabled={!selectedItem || quantity < 1 || unitPrice < 0}
+            disabled={!selectedItem || quantityValue < 1 || unitPriceValue < 0}
             type="submit"
             className="flex h-10 w-full items-center justify-center gap-2 bg-[#344a35] text-[11px] font-semibold text-white hover:bg-[#293c2b] disabled:cursor-not-allowed disabled:opacity-45"
           >

@@ -3,10 +3,18 @@ import { useMemo, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { formatAmount, formatDate } from '../constants/format'
 import type { AppOutletContext, InventoryInput } from '../types'
+import { normalizeNumberInput } from '../../utils/normalizeNumberInput'
 
 const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
 const labelClass = 'mb-1.5 block text-[10px] font-semibold text-[#656e63]'
+
+type InventoryDraft = Omit<InventoryInput, 'stock' | 'reorderPoint' | 'unitCost' | 'salePrice'> & {
+  stock: string
+  reorderPoint: string
+  unitCost: string
+  salePrice: string
+}
 
 export function InventoryPage() {
   const { inventory, collections, addItem } = useOutletContext<AppOutletContext>()
@@ -15,13 +23,13 @@ export function InventoryPage() {
   const [showForm, setShowForm] = useState(false)
   const [notice, setNotice] = useState('')
   const [modelsText, setModelsText] = useState('')
-  const [draft, setDraft] = useState<InventoryInput>({
+  const [draft, setDraft] = useState<InventoryDraft>({
     name: '',
     collectionId: collections[0]?.id ?? '',
-    stock: 0,
-    reorderPoint: 5,
-    unitCost: 0,
-    salePrice: 0,
+    stock: '',
+    reorderPoint: '',
+    unitCost: '',
+    salePrice: '',
     supplier: '',
   })
 
@@ -42,6 +50,10 @@ export function InventoryPage() {
     event.preventDefault()
     addItem({
       ...draft,
+      stock: Number(draft.stock),
+      reorderPoint: Number(draft.reorderPoint),
+      unitCost: Number(draft.unitCost),
+      salePrice: Number(draft.salePrice),
       name: draft.name.trim(),
       supplier: draft.supplier.trim(),
       compatibleMotorcycleModels: modelsText
@@ -52,10 +64,10 @@ export function InventoryPage() {
     setDraft({
       name: '',
       collectionId: collections[0]?.id ?? '',
-      stock: 0,
-      reorderPoint: 5,
-      unitCost: 0,
-      salePrice: 0,
+      stock: '',
+      reorderPoint: '',
+      unitCost: '',
+      salePrice: '',
       supplier: '',
     })
     setModelsText('')
@@ -143,7 +155,10 @@ export function InventoryPage() {
                 min="0"
                 type="number"
                 value={draft.stock}
-                onChange={(event) => setDraft({ ...draft, stock: Number(event.target.value) })}
+                placeholder="0"
+                onChange={(event) =>
+                  setDraft({ ...draft, stock: normalizeNumberInput(event.target.value) })
+                }
                 className={fieldClass}
               />
             </label>
@@ -154,8 +169,9 @@ export function InventoryPage() {
                 min="0"
                 type="number"
                 value={draft.reorderPoint}
+                placeholder="5"
                 onChange={(event) =>
-                  setDraft({ ...draft, reorderPoint: Number(event.target.value) })
+                  setDraft({ ...draft, reorderPoint: normalizeNumberInput(event.target.value) })
                 }
                 className={fieldClass}
               />
@@ -167,7 +183,10 @@ export function InventoryPage() {
                 min="0"
                 type="number"
                 value={draft.unitCost}
-                onChange={(event) => setDraft({ ...draft, unitCost: Number(event.target.value) })}
+                placeholder="0"
+                onChange={(event) =>
+                  setDraft({ ...draft, unitCost: normalizeNumberInput(event.target.value) })
+                }
                 className={fieldClass}
               />
             </label>
@@ -178,7 +197,10 @@ export function InventoryPage() {
                 min="0"
                 type="number"
                 value={draft.salePrice}
-                onChange={(event) => setDraft({ ...draft, salePrice: Number(event.target.value) })}
+                placeholder="0"
+                onChange={(event) =>
+                  setDraft({ ...draft, salePrice: normalizeNumberInput(event.target.value) })
+                }
                 className={fieldClass}
               />
             </label>
@@ -207,7 +229,7 @@ export function InventoryPage() {
               type="submit"
               className="h-10 bg-[#344a35] px-5 text-[11px] font-semibold text-white hover:bg-[#293c2b]"
             >
-              Save part
+              Save Item
             </button>
           </div>
         </form>
