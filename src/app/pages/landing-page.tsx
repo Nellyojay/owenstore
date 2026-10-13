@@ -9,6 +9,9 @@ import {
   ReceiptText,
 } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
+import { store } from '../../data/store'
+import { calculateSaleProfit } from '../../utils/calculations'
+import { formatAmount as formatCurrency } from '../constants/format'
 import type { AppOutletContext } from '../types'
 
 const formatAmount = (amount: number) =>
@@ -22,9 +25,42 @@ const todayLabel = new Intl.DateTimeFormat('en', {
   month: 'long',
   day: 'numeric',
 }).format(new Date())
+const currentMonthLabel = new Intl.DateTimeFormat('en', {
+  month: 'long',
+  year: 'numeric',
+}).format(new Date())
+const previousMonth = (() => {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth() - 1, 1)
+})()
+const previousMonthKey = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, '0')}`
+const previousMonthLabel = new Intl.DateTimeFormat('en', {
+  month: 'long',
+  year: 'numeric',
+}).format(previousMonth)
 
 export function LandingPage() {
   const { inventory, restocks, sales } = useOutletContext<AppOutletContext>()
+  const previousPurchases = store.purchases.filter((purchase) =>
+    purchase.date.startsWith(previousMonthKey),
+  )
+  const previousSales = store.sales.filter(
+    (sale) => sale.status === 'completed' && sale.date.startsWith(previousMonthKey),
+  )
+  const unitsBought = previousPurchases.reduce(
+    (sum, purchase) => sum + purchase.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+    0,
+  )
+  const amountSpent = previousPurchases.reduce((sum, purchase) => sum + purchase.total, 0)
+  const unitsSold = previousSales.reduce(
+    (sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+    0,
+  )
+  const salesRevenue = previousSales.reduce((sum, sale) => sum + sale.total, 0)
+  const previousMonthProfit = previousSales.reduce(
+    (sum, sale) => sum + calculateSaleProfit(sale),
+    0,
+  )
   const lowStockItems = inventory.filter((item) => item.stock <= item.reorderPoint)
   const unitsOnHand = inventory.reduce((total, item) => total + item.stock, 0)
   const stockValue = inventory.reduce((total, item) => total + item.stock * item.unitCost, 0)
@@ -38,7 +74,7 @@ export function LandingPage() {
 
   const metrics = [
     {
-      label: 'Parts in catalog',
+      label: 'Stock',
       value: inventory.length,
       note: `${unitsOnHand} units on hand`,
       icon: Boxes,
@@ -63,50 +99,104 @@ export function LandingPage() {
       icon: ArrowUpRight,
     },
   ]
+  const previousMonthMetrics = [
+    {
+      label: 'Units bought',
+      value: unitsBought.toLocaleString('en-US'),
+      note: `${previousPurchases.length} purchase${previousPurchases.length === 1 ? '' : 's'}`,
+      icon: PackagePlus,
+    },
+    {
+      label: 'Amount spent',
+      value: formatCurrency(amountSpent),
+      note: 'Purchase costs',
+      icon: ArrowDownLeft,
+    },
+    {
+      label: 'Sales revenue',
+      value: formatCurrency(salesRevenue),
+      note: `${unitsSold.toLocaleString('en-US')} units sold`,
+      icon: ArrowUpRight,
+    },
+    {
+      label: 'Profit',
+      value: formatCurrency(previousMonthProfit),
+      note: 'After item costs',
+      icon: ReceiptText,
+    },
+  ]
 
   return (
-    <main className="mx-auto max-w-360 px-4 py-7 sm:px-7 sm:py-9 lg:px-10">
+    <main className="mx-auto max-w-360 px-4 py-4 sm:px-7 sm:py-4 lg:px-10">
       <section className="flex min-h-full flex-col justify-center sm:min-h-[calc(100svh-8rem)] lg:min-h-0">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#75816f]">
-              Stockroom overview
-            </p>
-            <h1 className="mt-1 text-[27px] font-semibold tracking-tight text-[#26342b] sm:text-[32px]">
-              Good morning
-            </h1>
-            <p className="mt-1 text-[13px] text-[#737a70]">
-              A clear picture of parts, stock and shop activity.
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-[20px] font-bold uppercase tracking-[0.16em] text-[#75816f]">
+            Welcome to owenstore
+          </p>
           <p className="text-[12px] font-medium text-[#737a70]">{todayLabel}</p>
         </div>
 
         <section
           aria-label="Shop summary"
-          className="mt-5 grid grid-cols-2 border border-[#e2e5dc] bg-[#fbfcf8] xl:grid-cols-5"
+          className="mt-5 border border-[#e2e5dc] bg-[#fbfcf8]"
         >
-          {metrics.map(({ label, value, note, icon: Icon, alert }) => (
-            <div
-              key={label}
-              className="flex min-h-24 items-start justify-between border-b border-[#e2e5dc] p-3 odd:border-r last:border-b-0 sm:min-h-29 sm:p-5 xl:border-b-0 xl:border-r xl:last:border-r-0"
-            >
-              <div>
-                <p className="text-[11px] font-medium text-[#737a70]">{label}</p>
-                <p
-                  className={`mt-2 text-[27px] font-semibold tabular-nums tracking-[-0.03em] ${alert ? 'text-[#a85c39]' : 'text-[#26342b]'}`}
-                >
-                  {value}
-                </p>
-                <p className="mt-1 text-[10px] text-[#8a9087]">{note}</p>
+          <div className="flex items-center justify-between border-b border-[#e2e5dc] px-4 py-3 sm:px-5">
+            <h2 className="text-[12px] font-semibold text-[#29362d]">Current month</h2>
+            <span className="text-[10px] text-[#858b82]">{currentMonthLabel}</span>
+          </div>
+          <div
+            className="grid grid-cols-2 xl:grid-cols-5"
+          >
+            {metrics.map(({ label, value, note, icon: Icon, alert }) => (
+              <div
+                key={label}
+                className="flex min-h-24 items-start justify-between border-b border-[#e2e5dc] p-3 odd:border-r last:border-b-0 sm:min-h-29 sm:p-5 xl:border-b-0 xl:border-r xl:last:border-r-0"
+              >
+                <div>
+                  <p className="text-[11px] font-medium text-[#737a70]">{label}</p>
+                  <p
+                    className={`mt-2 text-[16px] font-semibold tabular-nums tracking-[-0.03em] ${alert ? 'text-[#a85c39]' : 'text-[#26342b]'}`}
+                  >
+                    {value}
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#8a9087]">{note}</p>
+                </div>
+                <Icon
+                  size={17}
+                  strokeWidth={1.7}
+                  className={alert ? 'text-[#a85c39]' : 'text-[#75816f]'}
+                />
               </div>
-              <Icon
-                size={17}
-                strokeWidth={1.7}
-                className={alert ? 'text-[#a85c39]' : 'text-[#75816f]'}
-              />
-            </div>
-          ))}
+            ))}
+          </div>
+
+        </section>
+
+        <section
+          aria-label={`Previous month summary for ${previousMonthLabel}`}
+          className="mt-5 border border-[#e2e5dc] bg-[#fbfcf8]"
+        >
+          <div className="flex items-center justify-between border-b border-[#e2e5dc] px-4 py-3 sm:px-5">
+            <h2 className="text-[12px] font-semibold text-[#29362d]">Previous month</h2>
+            <span className="text-[10px] text-[#858b82]">{previousMonthLabel}</span>
+          </div>
+          <div className="grid grid-cols-2 xl:grid-cols-4">
+            {previousMonthMetrics.map(({ label, value, note, icon: Icon }, index) => (
+              <div
+                key={label}
+                className={`flex min-h-23 items-start justify-between border-b border-[#e2e5dc] p-3 sm:p-4 ${index % 2 === 0 ? 'border-r' : ''} ${index >= 2 ? 'xl:border-b-0' : ''} ${index < 3 ? 'xl:border-r' : 'xl:border-r-0'}`}
+              >
+                <div>
+                  <p className="text-[10px] font-medium text-[#737a70]">{label}</p>
+                  <p className="mt-2 text-[16px] font-semibold tabular-nums text-[#26342b]">
+                    {value}
+                  </p>
+                  <p className="mt-1 text-[9px] text-[#8a9087]">{note}</p>
+                </div>
+                <Icon size={15} strokeWidth={1.7} className="text-[#75816f]" />
+              </div>
+            ))}
+          </div>
         </section>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
