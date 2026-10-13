@@ -14,16 +14,24 @@ export type NewSale = {
 
 export function createSale(input: NewSale): Sale | null {
   const product = store.products.find((entry) => entry.id === input.productId)
-  if (!product || input.quantity <= 0 || input.quantity > product.quantity || input.sellingPrice < 0) return null
+  if (
+    !product ||
+    input.quantity <= 0 ||
+    input.quantity > product.quantity ||
+    input.sellingPrice < 0
+  )
+    return null
 
-  const items = [{
-    productId: product.id,
-    productName: product.name,
-    sku: product.sku,
-    quantity: input.quantity,
-    sellingPrice: input.sellingPrice,
-    costPrice: product.costPrice,
-  }]
+  const items = [
+    {
+      productId: product.id,
+      productName: product.name,
+      sku: product.sku,
+      quantity: input.quantity,
+      sellingPrice: input.sellingPrice,
+      costPrice: product.costPrice,
+    },
+  ]
   const sale: Sale = {
     id: generateId('sale'),
     date: input.date,
@@ -34,6 +42,12 @@ export function createSale(input: NewSale): Sale | null {
   }
   store.sales.unshift(sale)
   product.quantity -= input.quantity
-  recordStockMovement({ productId: product.id, quantityChange: -input.quantity, reason: 'sale', reference: sale.id, date: input.date })
+  recordStockMovement({
+    productId: product.id,
+    quantityChange: -input.quantity,
+    reason: 'sale',
+    reference: sale.id,
+    date: input.date,
+  })
   return sale
 }

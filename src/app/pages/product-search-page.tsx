@@ -31,7 +31,9 @@ export function ProductSearchSection() {
         category,
         product.supplier,
         ...product.compatibleMotorcycleModels,
-      ].join(' ').toLowerCase()
+      ]
+        .join(' ')
+        .toLowerCase()
 
       return searchableContent.includes(normalizedQuery)
     })
@@ -65,28 +67,40 @@ export function ProductSearchSection() {
           {products.length} {products.length === 1 ? 'product' : 'products'}
           {normalizedQuery && ' found'}
         </p>
-        {normalizedQuery && <p className="max-w-[60%] truncate text-[11px] text-[#858b82]">“{query.trim()}”</p>}
+        {normalizedQuery && (
+          <p className="max-w-[60%] truncate text-[11px] text-[#858b82]">“{query.trim()}”</p>
+        )}
       </div>
 
       {products.length > 0 ? (
-        <section aria-label="Product search results" className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <section
+          aria-label="Product search results"
+          className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+        >
           {products.slice(0, 2).map(({ product, quantitySold }, index) => {
             const category = store.categories.find((entry) => entry.id === product.categoryId)
             const lowStock = product.quantity <= product.reorderPoint
             const isBestSeller = index === 0 && quantitySold > 0
 
             return (
-              <article key={product.id} className="flex min-w-0 flex-col border border-[#e2e5dc] bg-[#fbfcf8]">
+              <article
+                key={product.id}
+                className="flex min-w-0 flex-col border border-[#e2e5dc] bg-[#fbfcf8]"
+              >
                 <header className="flex items-start justify-between gap-3 border-b border-[#e2e5dc] p-4">
                   <div className="min-w-0">
                     <h2 className="text-[15px] font-semibold text-[#29362d]">{product.name}</h2>
                     <p className="mt-1 font-mono text-[10px] text-[#858b82]">{product.sku}</p>
                     <p className="mt-2 text-[10px] font-medium text-[#737a70]">
-                      {isBestSeller && <span className="mr-1.5 font-semibold text-[#526b45]">Best seller ·</span>}
+                      {isBestSeller && (
+                        <span className="mr-1.5 font-semibold text-[#526b45]">Best seller ·</span>
+                      )}
                       {quantitySold} sold
                     </p>
                   </div>
-                  <span className={`inline-flex shrink-0 items-center gap-1.5 text-[10px] font-semibold ${lowStock ? 'text-[#a85c39]' : 'text-[#526b45]'}`}>
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-1.5 text-[10px] font-semibold ${lowStock ? 'text-[#a85c39]' : 'text-[#526b45]'}`}
+                  >
                     {lowStock ? <CircleAlert size={14} /> : <Package size={14} />}
                     {product.quantity} in stock
                   </span>
@@ -111,7 +125,9 @@ export function ProductSearchSection() {
                   </div>
                   <div>
                     <p className={detailLabel}>Unit margin</p>
-                    <p className={detailValue}>{formatAmount(product.sellingPrice - product.costPrice)}</p>
+                    <p className={detailValue}>
+                      {formatAmount(product.sellingPrice - product.costPrice)}
+                    </p>
                   </div>
                   <div>
                     <p className={detailLabel}>Reorder point</p>
@@ -126,7 +142,12 @@ export function ProductSearchSection() {
                     {product.compatibleMotorcycleModels.length > 0 ? (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {product.compatibleMotorcycleModels.map((model) => (
-                          <span key={model} className="border border-[#dfe3da] bg-white px-2 py-1 text-[10px] text-[#526052]">{model}</span>
+                          <span
+                            key={model}
+                            className="border border-[#dfe3da] bg-white px-2 py-1 text-[10px] text-[#526052]"
+                          >
+                            {model}
+                          </span>
                         ))}
                       </div>
                     ) : (
@@ -139,7 +160,12 @@ export function ProductSearchSection() {
                   </div>
                   <div>
                     <p className={detailLabel}>Product ID</p>
-                    <p className={`${detailValue} truncate font-mono text-[10px]`} title={product.id}>{product.id}</p>
+                    <p
+                      className={`${detailValue} truncate font-mono text-[10px]`}
+                      title={product.id}
+                    >
+                      {product.id}
+                    </p>
                   </div>
                 </div>
 
@@ -165,7 +191,9 @@ export function ProductSearchSection() {
         <div className="mt-4 border border-dashed border-[#d5dbd0] px-5 py-14 text-center">
           <Search size={20} className="mx-auto text-[#899285]" />
           <p className="mt-3 text-[13px] font-medium text-[#364137]">No products found</p>
-          <p className="mt-1 text-[11px] text-[#858b82]">Try a different name, SKU, supplier, or model.</p>
+          <p className="mt-1 text-[11px] text-[#858b82]">
+            Try a different name, SKU, supplier, or model.
+          </p>
         </div>
       )}
     </section>
@@ -176,8 +204,12 @@ export function ProductSearchPage() {
   return (
     <main className="mx-auto max-w-360 px-4 py-7 sm:px-7 sm:py-9 lg:px-10">
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#75816f]">Product catalog</p>
-        <h1 className="mt-1 text-[27px] font-semibold tracking-tight text-[#26342b] sm:text-[32px]">Product search</h1>
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#75816f]">
+          Product catalog
+        </p>
+        <h1 className="mt-1 text-[27px] font-semibold tracking-tight text-[#26342b] sm:text-[32px]">
+          Product search
+        </h1>
       </div>
       <ProductSearchSection />
     </main>

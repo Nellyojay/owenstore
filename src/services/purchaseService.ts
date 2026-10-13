@@ -17,7 +17,15 @@ export function createPurchase(input: NewPurchase): Purchase | null {
   const product = store.products.find((entry) => entry.id === input.productId)
   if (!product || input.quantity <= 0 || input.unitCost < 0) return null
 
-  const items = [{ productId: product.id, productName: product.name, sku: product.sku, quantity: input.quantity, unitCost: input.unitCost }]
+  const items = [
+    {
+      productId: product.id,
+      productName: product.name,
+      sku: product.sku,
+      quantity: input.quantity,
+      unitCost: input.unitCost,
+    },
+  ]
   const purchase: Purchase = {
     id: generateId('purchase'),
     date: input.date,
@@ -33,6 +41,12 @@ export function createPurchase(input: NewPurchase): Purchase | null {
   product.quantity += input.quantity
   product.costPrice = input.unitCost
   product.lastRestocked = input.date
-  recordStockMovement({ productId: product.id, quantityChange: input.quantity, reason: 'purchase', reference: purchase.id, date: input.date })
+  recordStockMovement({
+    productId: product.id,
+    quantityChange: input.quantity,
+    reason: 'purchase',
+    reference: purchase.id,
+    date: input.date,
+  })
   return purchase
 }

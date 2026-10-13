@@ -37,7 +37,10 @@ export type RestockPurchase = {
   reference: string
 }
 
-export type RestockInput = Pick<RestockPurchase, 'itemId' | 'quantity' | 'unitPrice' | 'date' | 'reference'>
+export type RestockInput = Pick<
+  RestockPurchase,
+  'itemId' | 'quantity' | 'unitPrice' | 'date' | 'reference'
+>
 
 export type SaleRecord = {
   id: string

@@ -8,7 +8,16 @@ import { createPurchase } from '../services/purchaseService'
 import { createSale } from '../services/salesService'
 import { calculateProfit } from '../utils/calculations'
 import { generateId } from '../utils/generateId'
-import type { AppOutletContext, CollectionInput, InventoryInput, InventoryItem, RestockInput, RestockPurchase, SaleInput, SaleRecord } from './types'
+import type {
+  AppOutletContext,
+  CollectionInput,
+  InventoryInput,
+  InventoryItem,
+  RestockInput,
+  RestockPurchase,
+  SaleInput,
+  SaleRecord,
+} from './types'
 
 function toInventoryItem(product: Product): InventoryItem {
   return {
@@ -27,32 +36,36 @@ function toInventoryItem(product: Product): InventoryItem {
 }
 
 function toRestockRecords(purchases: Purchase[]): RestockPurchase[] {
-  return purchases.flatMap((purchase) => purchase.items.map((item) => ({
-    id: `${purchase.id}-${item.productId}`,
-    itemId: item.productId,
-    itemName: item.productName,
-    sku: item.sku,
-    supplier: purchase.supplier,
-    quantity: item.quantity,
-    unitPrice: item.unitCost,
-    totalPrice: item.quantity * item.unitCost,
-    date: purchase.date,
-    reference: purchase.reference,
-  })))
+  return purchases.flatMap((purchase) =>
+    purchase.items.map((item) => ({
+      id: `${purchase.id}-${item.productId}`,
+      itemId: item.productId,
+      itemName: item.productName,
+      sku: item.sku,
+      supplier: purchase.supplier,
+      quantity: item.quantity,
+      unitPrice: item.unitCost,
+      totalPrice: item.quantity * item.unitCost,
+      date: purchase.date,
+      reference: purchase.reference,
+    })),
+  )
 }
 
 function toSaleRecords(sales: Sale[]): SaleRecord[] {
-  return sales.flatMap((sale) => sale.items.map((item) => ({
-    id: `${sale.id}-${item.productId}`,
-    itemId: item.productId,
-    itemName: item.productName,
-    sku: item.sku,
-    quantity: item.quantity,
-    unitPrice: item.sellingPrice,
-    totalPrice: item.quantity * item.sellingPrice,
-    date: sale.date,
-    reference: sale.reference,
-  })))
+  return sales.flatMap((sale) =>
+    sale.items.map((item) => ({
+      id: `${sale.id}-${item.productId}`,
+      itemId: item.productId,
+      itemName: item.productName,
+      sku: item.sku,
+      quantity: item.quantity,
+      unitPrice: item.sellingPrice,
+      totalPrice: item.quantity * item.sellingPrice,
+      date: sale.date,
+      reference: sale.reference,
+    })),
+  )
 }
 
 export function App() {
@@ -102,12 +115,24 @@ export function App() {
   }
 
   function receiveRestock(input: RestockInput) {
-    const purchase = createPurchase({ productId: input.itemId, quantity: input.quantity, unitCost: input.unitPrice, date: input.date, reference: input.reference })
+    const purchase = createPurchase({
+      productId: input.itemId,
+      quantity: input.quantity,
+      unitCost: input.unitPrice,
+      date: input.date,
+      reference: input.reference,
+    })
     if (purchase) refreshStore()
   }
 
   function recordSale(input: SaleInput) {
-    const sale = createSale({ productId: input.itemId, quantity: input.quantity, sellingPrice: input.unitPrice, date: input.date, reference: input.reference })
+    const sale = createSale({
+      productId: input.itemId,
+      quantity: input.quantity,
+      sellingPrice: input.unitPrice,
+      date: input.date,
+      reference: input.reference,
+    })
     if (!sale) return false
     refreshStore()
     return true

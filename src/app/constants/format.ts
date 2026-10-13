@@ -3,7 +3,9 @@ export function formatAmount(amount: number) {
 }
 
 export function formatDate(date: string) {
-  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(`${date}T12:00:00`))
+  return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(
+    new Date(`${date}T12:00:00`),
+  )
 }
 
 export function todayISO() {
