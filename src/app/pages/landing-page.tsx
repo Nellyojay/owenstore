@@ -145,7 +145,7 @@ export function LandingPage() {
             <span className="text-[10px] text-[#858b82]">{currentMonthLabel}</span>
           </div>
           <div
-            className="grid grid-cols-2 xl:grid-cols-5"
+            className="grid grid-cols-2 xl:grid-cols-4"
           >
             {metrics.map(({ label, value, note, icon: Icon, alert }) => (
               <div
