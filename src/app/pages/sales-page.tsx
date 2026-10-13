@@ -1,4 +1,4 @@
-import { ArrowUpRight, ReceiptText } from 'lucide-react'
+import { ArrowUpRight, ReceiptText, Search } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { formatAmount, formatDate, todayISO } from '../constants/format'
@@ -16,6 +16,11 @@ export function SalesPage() {
     ? (requestedItemId ?? '')
     : (inventory[0]?.id ?? '')
   const [selectedItemId, setSelectedItemId] = useState(initialItemId)
+  const [productQuery, setProductQuery] = useState(
+    inventory.find((item) => item.id === initialItemId)?.name ?? '',
+  )
+  const [isProductMenuOpen, setIsProductMenuOpen] = useState(false)
+  const [activeProductIndex, setActiveProductIndex] = useState(-1)
   const [quantity, setQuantity] = useState(1)
   const [unitPrice, setUnitPrice] = useState(
     inventory.find((item) => item.id === initialItemId)?.salePrice ?? 0,
@@ -25,8 +30,26 @@ export function SalesPage() {
   const [notice, setNotice] = useState('')
   const [noticeIsError, setNoticeIsError] = useState(false)
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
+  const normalizedProductQuery = productQuery.trim().toLowerCase()
+  const matchingItems = inventory.filter((item) =>
+    [item.name, item.sku, item.category, item.supplier]
+      .join(' ')
+      .toLowerCase()
+      .includes(normalizedProductQuery),
+  )
   const totalPrice = quantity * unitPrice
   const salesTotal = sales.reduce((sum, sale) => sum + sale.totalPrice, 0)
+
+  function selectProduct(itemId: string) {
+    const item = inventory.find((inventoryItem) => inventoryItem.id === itemId)
+    if (!item) return
+
+    setSelectedItemId(item.id)
+    setProductQuery(item.name)
+    setUnitPrice(item.salePrice)
+    setIsProductMenuOpen(false)
+    setActiveProductIndex(-1)
+  }
 
   function submitSale(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -73,25 +96,120 @@ export function SalesPage() {
             </p>
           </div>
           <form onSubmit={submitSale} className="space-y-3 p-4">
-            <label className="block">
-              <span className={labelClass}>Part sold</span>
-              <select
-                required
-                value={selectedItemId}
-                onChange={(event) => {
-                  const nextId = event.target.value
-                  setSelectedItemId(nextId)
-                  setUnitPrice(inventory.find((item) => item.id === nextId)?.salePrice ?? 0)
-                }}
-                className={fieldClass}
-              >
-                {inventory.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} · {item.stock} in stock
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="relative">
+              <label htmlFor="sale-product-search" className={labelClass}>
+                Part sold
+              </label>
+              <div className="relative">
+                <Search
+                  size={15}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#858b82]"
+                />
+                <input
+                  id="sale-product-search"
+                  type="text"
+                  required
+                  role="combobox"
+                  autoComplete="off"
+                  aria-autocomplete="list"
+                  aria-expanded={isProductMenuOpen}
+                  aria-controls="sale-product-options"
+                  aria-activedescendant={
+                    matchingItems[activeProductIndex]
+                      ? `sale-product-option-${activeProductIndex}`
+                      : undefined
+                  }
+                  value={productQuery}
+                  onFocus={() => {
+                    setIsProductMenuOpen(true)
+                    setActiveProductIndex(matchingItems.length > 0 ? 0 : -1)
+                  }}
+                  onBlur={() => setIsProductMenuOpen(false)}
+                  onChange={(event) => {
+                    setProductQuery(event.target.value)
+                    setSelectedItemId('')
+                    setUnitPrice(0)
+                    setIsProductMenuOpen(true)
+                    setActiveProductIndex(0)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown' && matchingItems.length > 0) {
+                      event.preventDefault()
+                      setIsProductMenuOpen(true)
+                      setActiveProductIndex((index) =>
+                        index < 0 ? 0 : Math.min(index + 1, matchingItems.length - 1),
+                      )
+                    }
+                    if (event.key === 'ArrowUp' && matchingItems.length > 0) {
+                      event.preventDefault()
+                      setIsProductMenuOpen(true)
+                      setActiveProductIndex((index) =>
+                        index < 0 ? matchingItems.length - 1 : Math.max(index - 1, 0),
+                      )
+                    }
+                    if (
+                      event.key === 'Enter' &&
+                      isProductMenuOpen &&
+                      matchingItems.length > 0
+                    ) {
+                      event.preventDefault()
+                      selectProduct(matchingItems[Math.max(activeProductIndex, 0)].id)
+                    }
+                    if (event.key === 'Escape') {
+                      setIsProductMenuOpen(false)
+                      setActiveProductIndex(-1)
+                    }
+                  }}
+                  placeholder="Search by name, SKU, category, or supplier"
+                  className={`${fieldClass} pl-9`}
+                />
+              </div>
+              {isProductMenuOpen && (
+                <ul
+                  id="sale-product-options"
+                  role="listbox"
+                  className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto border border-[#dfe3da] bg-white py-1 shadow-lg"
+                >
+                  {matchingItems.length > 0 ? (
+                    matchingItems.map((item, index) => (
+                      <li key={item.id} role="presentation">
+                        <button
+                          id={`sale-product-option-${index}`}
+                          type="button"
+                          role="option"
+                          aria-selected={activeProductIndex === index}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onMouseEnter={() => setActiveProductIndex(index)}
+                          onClick={() => selectProduct(item.id)}
+                          className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-[#f3f5ef] ${activeProductIndex === index ? 'bg-[#f3f5ef]' : ''}`}
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-[11px] font-medium text-[#364137]">
+                              {item.name}
+                            </span>
+                            <span className="mt-0.5 block truncate font-mono text-[9px] text-[#858b82]">
+                              {item.sku} · {item.category}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-[10px] tabular-nums text-[#737a70]">
+                            {item.stock} in stock
+                          </span>
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li
+                      className="px-3 py-3 text-[11px] text-[#737a70]"
+                      role="option"
+                      aria-selected="false"
+                    >
+                      No matching products
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <label>
                 <span className={labelClass}>Quantity sold</span>
