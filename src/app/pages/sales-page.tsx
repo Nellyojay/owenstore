@@ -10,7 +10,7 @@ const fieldClass =
 const labelClass = 'mb-1.5 block text-[10px] font-semibold text-[#656e63]'
 
 export function SalesPage() {
-  const { inventory, sales, recordSale } = useOutletContext<AppOutletContext>()
+  const { inventory, collections, sales, recordSale } = useOutletContext<AppOutletContext>()
   const [searchParams] = useSearchParams()
   const requestedItemId = searchParams.get('item')
   const initialItemId = inventory.some((item) => item.id === requestedItemId)
@@ -32,8 +32,9 @@ export function SalesPage() {
   const [noticeIsError, setNoticeIsError] = useState(false)
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
   const normalizedProductQuery = productQuery.trim().toLowerCase()
+  const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]))
   const matchingItems = inventory.filter((item) =>
-    [item.name, item.sku, item.category, item.supplier]
+    [item.name, item.sku, collectionNames.get(item.collectionId), item.supplier]
       .join(' ')
       .toLowerCase()
       .includes(normalizedProductQuery),
@@ -144,7 +145,7 @@ export function SalesPage() {
                     setActiveProductIndex(-1)
                   }
                 }}
-                placeholder="Search by name, SKU, category, or supplier"
+                placeholder="Search by name, SKU, collection, or supplier"
                 className={`${fieldClass} pl-9`}
               />
             </div>
@@ -172,7 +173,7 @@ export function SalesPage() {
                             {item.name}
                           </span>
                           <span className="mt-0.5 block truncate font-mono text-[9px] text-[#858b82]">
-                            {item.sku} · {item.category}
+                            {item.sku} · {collectionNames.get(item.collectionId) ?? 'Unassigned'}
                           </span>
                         </span>
                         <span className="shrink-0 text-[10px] tabular-nums text-[#737a70]">

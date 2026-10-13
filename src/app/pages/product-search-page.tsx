@@ -23,12 +23,11 @@ export function ProductSearchSection() {
   const products = store.products
     .map((product) => ({ product, quantitySold: soldQuantities.get(product.id) ?? 0 }))
     .filter(({ product }) => {
-      const category = store.categories.find((entry) => entry.id === product.categoryId)?.name ?? ''
+      const collection = store.collections.find((entry) => entry.id === product.collectionId)?.name ?? ''
       const searchableContent = [
         product.name,
         product.sku,
-        product.category,
-        category,
+        collection,
         product.supplier,
         ...product.compatibleMotorcycleModels,
       ]
@@ -47,7 +46,7 @@ export function ProductSearchSection() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search name, SKU, category, supplier, or motorcycle model"
+          placeholder="Search name, SKU, collection, supplier, or motorcycle model"
           className="min-w-0 flex-1 bg-transparent text-[13px] text-[#29362d] outline-none placeholder:text-[#9a9f97]"
         />
         {query && (
@@ -78,7 +77,7 @@ export function ProductSearchSection() {
           className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
         >
           {products.slice(0, 2).map(({ product, quantitySold }, index) => {
-            const category = store.categories.find((entry) => entry.id === product.categoryId)
+            const collection = store.collections.find((entry) => entry.id === product.collectionId)
             const lowStock = product.quantity <= product.reorderPoint
             const isBestSeller = index === 0 && quantitySold > 0
 
@@ -108,12 +107,8 @@ export function ProductSearchSection() {
 
                 <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-4 p-4">
                   <div>
-                    <p className={detailLabel}>Category</p>
-                    <p className={detailValue}>{product.category}</p>
-                  </div>
-                  <div>
                     <p className={detailLabel}>Collection</p>
-                    <p className={detailValue}>{category?.name ?? 'Unassigned'}</p>
+                    <p className={detailValue}>{collection?.name ?? 'Unassigned'}</p>
                   </div>
                   <div>
                     <p className={detailLabel}>Cost price</p>

@@ -1,4 +1,4 @@
-import { categories } from './categories'
+import { collections } from './collections'
 import { products } from './products'
 import { purchases } from './purchases'
 import { sales } from './sales'
@@ -7,7 +7,7 @@ import { suppliers } from './suppliers'
 import type { Store } from './types'
 
 export const store: Store = {
-  categories,
+  collections,
   products,
   suppliers,
   sales,

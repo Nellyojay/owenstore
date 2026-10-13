@@ -10,7 +10,7 @@ const fieldClass =
 const labelClass = 'mb-1.5 block text-[10px] font-semibold text-[#656e63]'
 
 export function RestocksPage() {
-  const { inventory, restocks, receiveRestock } = useOutletContext<AppOutletContext>()
+  const { inventory, collections, restocks, receiveRestock } = useOutletContext<AppOutletContext>()
   const [searchParams] = useSearchParams()
   const requestedItemId = searchParams.get('item')
   const initialItemId = inventory.some((item) => item.id === requestedItemId)
@@ -31,8 +31,9 @@ export function RestocksPage() {
   const [notice, setNotice] = useState('')
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
   const normalizedProductQuery = productQuery.trim().toLowerCase()
+  const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]))
   const matchingItems = inventory.filter((item) =>
-    [item.name, item.sku, item.category, item.supplier]
+    [item.name, item.sku, collectionNames.get(item.collectionId), item.supplier]
       .join(' ')
       .toLowerCase()
       .includes(normalizedProductQuery),
@@ -138,7 +139,7 @@ export function RestocksPage() {
                     setActiveProductIndex(-1)
                   }
                 }}
-                placeholder="Search by name, SKU, category, or supplier"
+                placeholder="Search by name, SKU, collection, or supplier"
                 className={`${fieldClass} pl-9`}
               />
             </div>
@@ -166,7 +167,7 @@ export function RestocksPage() {
                             {item.name}
                           </span>
                           <span className="mt-0.5 block truncate font-mono text-[9px] text-[#858b82]">
-                            {item.sku} · {item.category}
+                            {item.sku} · {collectionNames.get(item.collectionId) ?? 'Unassigned'}
                           </span>
                         </span>
                         <span className="shrink-0 text-[10px] tabular-nums text-[#737a70]">

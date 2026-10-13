@@ -2,7 +2,6 @@ export type InventoryItem = {
   id: string
   sku: string
   name: string
-  category: string
   collectionId: string
   stock: number
   reorderPoint: number
@@ -12,17 +11,18 @@ export type InventoryItem = {
   lastRestocked: string
 }
 
-export type InventoryInput = Omit<InventoryItem, 'id' | 'lastRestocked'> & {
+export type InventoryInput = Omit<InventoryItem, 'id' | 'lastRestocked' | 'sku'> & {
   compatibleMotorcycleModels?: string[]
 }
 
 export type Collection = {
   id: string
   name: string
+  abbreviation: string
   description: string
 }
 
-export type CollectionInput = Omit<Collection, 'id'>
+export type CollectionInput = Omit<Collection, 'id' | 'abbreviation'>
 
 export type RestockPurchase = {
   id: string

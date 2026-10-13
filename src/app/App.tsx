@@ -18,14 +18,14 @@ import type {
   SaleInput,
   SaleRecord,
 } from './types'
+import { formatCollectionAbbreviation } from '../utils/formatCollectionAbbreviation'
 
 function toInventoryItem(product: Product): InventoryItem {
   return {
     id: product.id,
     sku: product.sku,
     name: product.name,
-    category: product.category,
-    collectionId: product.categoryId,
+    collectionId: product.collectionId,
     stock: product.quantity,
     reorderPoint: product.reorderPoint,
     unitCost: product.costPrice,
@@ -72,7 +72,7 @@ export function App() {
   const location = useLocation()
   const [, setStoreVersion] = useState(0)
   const inventory = store.products.map(toInventoryItem)
-  const collections = store.categories
+  const collections = store.collections
   const restocks = toRestockRecords(store.purchases)
   const sales = toSaleRecords(store.sales)
   const profit = calculateProfit(store.sales)
@@ -92,10 +92,7 @@ export function App() {
       store.suppliers.unshift(supplier)
     }
     addProduct({
-      sku: item.sku,
       name: item.name,
-      categoryId: item.collectionId,
-      category: item.category,
       collectionId: item.collectionId,
       quantity: item.stock,
       reorderPoint: item.reorderPoint,
@@ -110,7 +107,11 @@ export function App() {
   }
 
   function addCollection(collection: CollectionInput) {
-    store.categories.unshift({ ...collection, id: generateId('category') })
+    store.collections.unshift({
+      ...collection,
+      id: generateId('collection'),
+      abbreviation: formatCollectionAbbreviation(collection.name),
+    })
     refreshStore()
   }
 

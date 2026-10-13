@@ -16,9 +16,7 @@ export function InventoryPage() {
   const [notice, setNotice] = useState('')
   const [modelsText, setModelsText] = useState('')
   const [draft, setDraft] = useState<InventoryInput>({
-    sku: '',
     name: '',
-    category: 'Engine',
     collectionId: collections[0]?.id ?? '',
     stock: 0,
     reorderPoint: 5,
@@ -44,7 +42,6 @@ export function InventoryPage() {
     event.preventDefault()
     addItem({
       ...draft,
-      sku: draft.sku.trim().toUpperCase(),
       name: draft.name.trim(),
       supplier: draft.supplier.trim(),
       compatibleMotorcycleModels: modelsText
@@ -53,9 +50,7 @@ export function InventoryPage() {
         .filter(Boolean),
     })
     setDraft({
-      sku: '',
       name: '',
-      category: 'Engine',
       collectionId: collections[0]?.id ?? '',
       stock: 0,
       reorderPoint: 5,
@@ -127,16 +122,6 @@ export function InventoryPage() {
               />
             </label>
             <label>
-              <span className={labelClass}>SKU</span>
-              <input
-                required
-                value={draft.sku}
-                onChange={(event) => setDraft({ ...draft, sku: event.target.value })}
-                placeholder="BRK-021"
-                className={fieldClass}
-              />
-            </label>
-            <label>
               <span className={labelClass}>Collection</span>
               <select
                 required
@@ -150,15 +135,6 @@ export function InventoryPage() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label>
-              <span className={labelClass}>Category</span>
-              <input
-                required
-                value={draft.category}
-                onChange={(event) => setDraft({ ...draft, category: event.target.value })}
-                className={fieldClass}
-              />
             </label>
             <label>
               <span className={labelClass}>Opening stock</span>
@@ -291,7 +267,7 @@ export function InventoryPage() {
                     <td className="px-4 py-3">
                       <p className="text-[12px] font-medium text-[#364137]">{item.name}</p>
                       <p className="mt-1 text-[10px] text-[#858b82]">
-                        {item.category} · updated {formatDate(item.lastRestocked)}
+                        Updated {formatDate(item.lastRestocked)}
                       </p>
                     </td>
                     <td className="px-3 py-3 font-mono text-[10px] text-[#7e857b]">{item.sku}</td>

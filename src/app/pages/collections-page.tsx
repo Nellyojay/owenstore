@@ -106,7 +106,12 @@ export function CollectionsPage() {
                   {parts.length} {parts.length === 1 ? 'part' : 'parts'}
                 </span>
               </div>
-              <h2 className="mt-4 text-[15px] font-semibold text-[#303b32]">{collection.name}</h2>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <h2 className="text-[15px] font-semibold text-[#303b32]">{collection.name}</h2>
+                <span className="shrink-0 font-mono text-[10px] font-semibold text-[#75816f]">
+                  {collection.abbreviation}
+                </span>
+              </div>
               <p className="mt-1 min-h-10 text-[11px] leading-5 text-[#7b8278]">
                 {collection.description || 'No description added.'}
               </p>

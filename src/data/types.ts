@@ -1,6 +1,7 @@
-export type Category = {
+export type Collection = {
   id: string
   name: string
+  abbreviation: string
   description: string
 }
 
@@ -15,8 +16,6 @@ export type Product = {
   id: string
   sku: string
   name: string
-  categoryId: string
-  category: string
   collectionId: string
   quantity: number
   reorderPoint: number
@@ -76,7 +75,7 @@ export type StockMovement = {
 }
 
 export type Store = {
-  categories: Category[]
+  collections: Collection[]
   products: Product[]
   suppliers: Supplier[]
   sales: Sale[]
