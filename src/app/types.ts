@@ -63,7 +63,12 @@ export type SaleRecord = {
   reference: string
 }
 
-export type SaleInput = Pick<SaleRecord, 'itemId' | 'quantity' | 'unitPrice' | 'date'>
+export type SaleLineInput = Pick<SaleRecord, 'itemId' | 'quantity' | 'unitPrice'>
+
+export type SaleInput = {
+  items: SaleLineInput[]
+  date: string
+}
 
 export type AppOutletContext = {
   inventory: InventoryItem[]

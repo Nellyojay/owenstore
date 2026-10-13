@@ -64,8 +64,8 @@ function toRestockRecords(purchases: Purchase[]): RestockPurchase[] {
 
 function toSaleRecords(sales: Sale[]): SaleRecord[] {
   return sales.flatMap((sale) =>
-    sale.items.map((item) => ({
-      id: `${sale.id}-${item.productId}`,
+    sale.items.map((item, index) => ({
+      id: `${sale.id}-${index}`,
       itemId: item.productId,
       itemName: item.productName,
       sku: item.sku,
@@ -162,9 +162,11 @@ export function App() {
 
   function recordSale(input: SaleInput) {
     const sale = createSale({
-      productId: input.itemId,
-      quantity: input.quantity,
-      sellingPrice: input.unitPrice,
+      items: input.items.map((item) => ({
+        productId: item.itemId,
+        quantity: item.quantity,
+        sellingPrice: item.unitPrice,
+      })),
       date: input.date,
     })
     if (!sale) return false

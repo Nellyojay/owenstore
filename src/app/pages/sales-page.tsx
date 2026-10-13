@@ -1,4 +1,4 @@
-import { ArrowUpRight, ReceiptText, Search } from 'lucide-react'
+import { ArrowUpRight, Plus, ReceiptText, Search, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useOutletContext, useSearchParams } from 'react-router-dom'
 import { DataTable, TransactionPageLayout } from '../components/transaction-page'
@@ -10,6 +10,14 @@ import { normalizeSearchQuery } from '../../utils/inputGuards'
 const fieldClass =
   'h-10 w-full border border-[#dfe3da] bg-white px-3 text-[12px] text-[#29362d] outline-none focus:border-[#788c68]'
 const labelClass = 'mb-1.5 block text-[10px] font-semibold text-[#656e63]'
+
+type PendingSaleItem = {
+  productId: string
+  productName: string
+  sku: string
+  quantity: number
+  unitPrice: number
+}
 
 export function SalesPage() {
   const { inventory, collections, sales, recordSale } = useOutletContext<AppOutletContext>()
@@ -32,9 +40,14 @@ export function SalesPage() {
   const [date, setDate] = useState(todayISO())
   const [notice, setNotice] = useState('')
   const [noticeIsError, setNoticeIsError] = useState(false)
+  const [pendingItems, setPendingItems] = useState<PendingSaleItem[]>([])
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
   const quantityValue = Number(quantity)
   const unitPriceValue = Number(unitPrice)
+  const pendingQuantity = pendingItems
+    .filter((item) => item.productId === selectedItemId)
+    .reduce((sum, item) => sum + item.quantity, 0)
+  const availableQuantity = (selectedItem?.stock ?? 0) - pendingQuantity
   const normalizedProductQuery = normalizeSearchQuery(productQuery)
   const collectionNames = new Map(collections.map((collection) => [collection.id, collection.name]))
   const matchingItems = inventory.filter((item) =>
@@ -43,7 +56,10 @@ export function SalesPage() {
     )
       .includes(normalizedProductQuery),
   )
-  const totalPrice = quantityValue * unitPriceValue
+  const totalPrice = pendingItems.reduce(
+    (sum, item) => sum + item.quantity * item.unitPrice,
+    0,
+  )
   const salesTotal = sales.reduce((sum, sale) => sum + sale.totalPrice, 0)
 
   function selectProduct(itemId: string) {
@@ -57,24 +73,53 @@ export function SalesPage() {
     setActiveProductIndex(-1)
   }
 
-  function submitSale(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!selectedItem) return
-    if (quantityValue <= 0 || quantityValue > selectedItem.stock) {
-      setNotice(`Only ${selectedItem.stock} units are available.`)
+  function addPendingItem() {
+    if (!selectedItem || quantityValue <= 0 || !unitPrice.trim() || unitPriceValue < 0) return
+    if (quantityValue > availableQuantity) {
+      setNotice(`Only ${Math.max(availableQuantity, 0)} units are available for this sale.`)
       setNoticeIsError(true)
       return
     }
+
+    setPendingItems((items) => [
+      ...items,
+      {
+        productId: selectedItem.id,
+        productName: selectedItem.name,
+        sku: selectedItem.sku,
+        quantity: quantityValue,
+        unitPrice: unitPriceValue,
+      },
+    ])
+    setSelectedItemId('')
+    setProductQuery('')
+    setQuantity('')
+    setUnitPrice('')
+    setNotice('Item added to the pending sale.')
+    setNoticeIsError(false)
+  }
+
+  function submitSale(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (pendingItems.length === 0) return
     const saved = recordSale({
-      itemId: selectedItem.id,
-      quantity: quantityValue,
-      unitPrice: unitPriceValue,
+      items: pendingItems.map((item) => ({
+        itemId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
       date,
     })
-    if (!saved) return
-    setNotice(`${quantityValue} × ${selectedItem.name} recorded. Total: ${formatAmount(totalPrice)}.`)
+    if (!saved) {
+      setNotice('Sale could not be recorded. Check the available stock and try again.')
+      setNoticeIsError(true)
+      return
+    }
+    setNotice(
+      `${pendingItems.length} item${pendingItems.length === 1 ? '' : 's'} sold. Total: ${formatAmount(totalPrice)}.`,
+    )
     setNoticeIsError(false)
-    setQuantity('')
+    setPendingItems([])
   }
 
   return (
@@ -99,7 +144,6 @@ export function SalesPage() {
               <input
                 id="sale-product-search"
                 type="text"
-                required
                 role="combobox"
                 autoComplete="off"
                 aria-autocomplete="list"
@@ -200,9 +244,8 @@ export function SalesPage() {
             <label>
               <span className={labelClass}>Quantity sold</span>
               <input
-                required
                 min="1"
-                max={selectedItem?.stock ?? 0}
+                max={availableQuantity}
                 step="1"
                 type="number"
                 value={quantity}
@@ -214,7 +257,6 @@ export function SalesPage() {
             <label>
               <span className={labelClass}>Unit sale price</span>
               <input
-                required
                 min="0"
                 step="any"
                 type="number"
@@ -225,6 +267,69 @@ export function SalesPage() {
               />
             </label>
           </div>
+          <button
+            type="button"
+            onClick={addPendingItem}
+            disabled={
+              !selectedItem ||
+              quantityValue < 1 ||
+              quantityValue > availableQuantity ||
+              !unitPrice.trim() ||
+              unitPriceValue < 0
+            }
+            className="flex h-9 w-full items-center justify-center gap-2 border border-[#dfe3da] text-[11px] font-semibold text-[#526b45] hover:bg-[#f3f5ef] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Plus size={14} /> Add item to sale
+          </button>
+          {pendingItems.length > 0 && (
+            <section className="border border-[#e2e5dc] bg-white">
+              <div className="flex items-center justify-between border-b border-[#eceee8] px-3 py-2">
+                <div>
+                  <h3 className="text-[11px] font-semibold text-[#364137]">Items to record</h3>
+                  <p className="mt-0.5 text-[10px] text-[#737a70]">{pendingItems.length} items</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPendingItems([])}
+                  className="inline-flex h-7 items-center gap-1.5 px-2 text-[10px] font-semibold text-[#a85c39] hover:bg-[#fbf0ea]"
+                >
+                  <Trash2 size={12} /> Clear items
+                </button>
+              </div>
+              <ul className="divide-y divide-[#eceee8]">
+                {pendingItems.map((item, index) => (
+                  <li
+                    key={`${item.productId}-${index}`}
+                    className="flex items-center gap-3 px-3 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] font-medium text-[#364137]">
+                        {item.productName}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[9px] text-[#858b82]">
+                        {item.sku} · {item.quantity} × {formatAmount(item.unitPrice)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-semibold tabular-nums text-[#364137]">
+                      {formatAmount(item.quantity * item.unitPrice)}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${item.productName}`}
+                      onClick={() =>
+                        setPendingItems((items) =>
+                          items.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                      }
+                      className="flex h-7 w-7 shrink-0 items-center justify-center text-[#858b82] hover:bg-[#f3f5ef] hover:text-[#a85c39]"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <div className="grid gap-3">
             <label>
               <span className={labelClass}>Sale date</span>
@@ -244,19 +349,18 @@ export function SalesPage() {
                 {formatAmount(totalPrice)}
               </p>
             </div>
-            <p className="pb-1 text-[10px] text-[#858b82]">{selectedItem?.stock ?? 0} available</p>
+            <p className="pb-1 text-[10px] text-[#858b82]">
+              {pendingItems.length} pending item{pendingItems.length === 1 ? '' : 's'}
+            </p>
           </div>
           <button
             disabled={
-              !selectedItem ||
-              quantityValue < 1 ||
-              quantityValue > (selectedItem?.stock ?? 0) ||
-              unitPriceValue < 0
+              pendingItems.length === 0
             }
             type="submit"
             className="flex h-10 w-full items-center justify-center gap-2 bg-[#344a35] text-[11px] font-semibold text-white hover:bg-[#293c2b] disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <ArrowUpRight size={15} /> Save sale
+            <ArrowUpRight size={15} /> Record sale
           </button>
           {notice && (
             <p
