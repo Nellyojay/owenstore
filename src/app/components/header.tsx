@@ -69,17 +69,17 @@ export function Header() {
           <p className="mt-2 text-[10px] leading-5 text-[#92988e]">Changes save in this browser.</p>
         </div>
       </aside>
-      <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[#e2e5dc] bg-[#fbfcf8] px-4 lg:hidden">
-        <Link to="/" className="flex items-center gap-2 text-[14px] font-bold text-[#29362d]">
-          <Wrench size={18} className="text-[#526b45]" /> Owenstore
-        </Link>
+      <header className="sticky top-0 z-20 flex h-14 gap-4 items-center border-b border-[#e2e5dc] bg-[#fbfcf8] px-4 lg:hidden">
         <button
           aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
-          className="flex h-10 w-10 items-center justify-center"
+          className="flex h-10 w-10 items-center justify-center bg-[#f0f1ec] rounded-sm"
           onClick={() => setMenuOpen((open) => !open)}
         >
           {menuOpen ? <X size={19} strokeWidth={1.8} /> : <Menu size={19} strokeWidth={1.8} />}
         </button>
+        <Link to="/" className="flex items-center gap-2 text-[14px] font-bold text-[#29362d]">
+          <Wrench size={18} className="text-[#526b45]" /> Owenstore
+        </Link>
         {menuOpen && (
           <nav className="absolute left-0 right-0 top-full border-b border-[#e2e5dc] bg-[#fbfcf8] p-3 shadow-sm">
             <NavigationLinks onNavigate={() => setMenuOpen(false)} />

@@ -9,7 +9,6 @@ import {
   ReceiptText,
 } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
-import { ProductSearchSection } from './product-search-page'
 import type { AppOutletContext } from '../types'
 
 const formatAmount = (amount: number) =>
@@ -125,8 +124,6 @@ export function LandingPage() {
           </Link>
         </div>
       </section>
-
-      <ProductSearchSection />
 
       <div className="mt-7 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="min-w-0 border border-[#e2e5dc] bg-[#fbfcf8]">
