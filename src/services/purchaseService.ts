@@ -2,6 +2,7 @@ import { store } from '../data/store'
 import type { Purchase } from '../data/types'
 import { calculatePurchaseTotal } from '../utils/calculations'
 import { generateId } from '../utils/generateId'
+import { generateReferenceCode } from '../utils/generateReferenceCode'
 import { recordStockMovement } from './inventoryService'
 
 export type NewPurchase = {
@@ -9,7 +10,6 @@ export type NewPurchase = {
   quantity: number
   unitCost: number
   date: string
-  reference: string
   paymentMethod?: string
 }
 
@@ -29,7 +29,7 @@ export function createPurchase(input: NewPurchase): Purchase | null {
   const purchase: Purchase = {
     id: generateId('purchase'),
     date: input.date,
-    reference: input.reference,
+    reference: generateReferenceCode('STK', store.purchases.map((purchase) => purchase.reference)),
     supplierId: product.supplierId,
     supplier: product.supplier,
     paymentStatus: 'paid',

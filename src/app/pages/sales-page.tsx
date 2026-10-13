@@ -29,7 +29,6 @@ export function SalesPage() {
     return price > 0 ? String(price) : ''
   })
   const [date, setDate] = useState(todayISO())
-  const [reference, setReference] = useState('')
   const [notice, setNotice] = useState('')
   const [noticeIsError, setNoticeIsError] = useState(false)
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
@@ -70,13 +69,11 @@ export function SalesPage() {
       quantity: quantityValue,
       unitPrice: unitPriceValue,
       date,
-      reference: reference.trim() || 'Counter sale',
     })
     if (!saved) return
     setNotice(`${quantityValue} × ${selectedItem.name} recorded. Total: ${formatAmount(totalPrice)}.`)
     setNoticeIsError(false)
     setQuantity('')
-    setReference('')
   }
 
   return (
@@ -227,7 +224,7 @@ export function SalesPage() {
               />
             </label>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3">
             <label>
               <span className={labelClass}>Sale date</span>
               <input
@@ -235,15 +232,6 @@ export function SalesPage() {
                 type="date"
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
-                className={fieldClass}
-              />
-            </label>
-            <label>
-              <span className={labelClass}>Receipt reference</span>
-              <input
-                value={reference}
-                onChange={(event) => setReference(event.target.value)}
-                placeholder="Optional"
                 className={fieldClass}
               />
             </label>

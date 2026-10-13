@@ -29,7 +29,6 @@ export function RestocksPage() {
     return price > 0 ? String(price) : ''
   })
   const [date, setDate] = useState(todayISO())
-  const [reference, setReference] = useState('')
   const [notice, setNotice] = useState('')
   const selectedItem = inventory.find((item) => item.id === selectedItemId)
   const quantityValue = Number(quantity)
@@ -64,13 +63,11 @@ export function RestocksPage() {
       quantity: quantityValue,
       unitPrice: unitPriceValue,
       date,
-      reference: reference.trim() || 'Stock receipt',
     })
     setNotice(
       `${quantityValue} units of ${selectedItem.name} received. Total: ${formatAmount(totalPrice)}.`,
     )
     setQuantity('')
-    setReference('')
   }
 
   return (
@@ -220,7 +217,7 @@ export function RestocksPage() {
               />
             </label>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3">
             <label>
               <span className={labelClass}>Date received</span>
               <input
@@ -228,15 +225,6 @@ export function RestocksPage() {
                 type="date"
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
-                className={fieldClass}
-              />
-            </label>
-            <label>
-              <span className={labelClass}>Invoice reference</span>
-              <input
-                value={reference}
-                onChange={(event) => setReference(event.target.value)}
-                placeholder="Optional"
                 className={fieldClass}
               />
             </label>

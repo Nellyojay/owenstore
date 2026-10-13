@@ -121,7 +121,6 @@ export function App() {
       quantity: input.quantity,
       unitCost: input.unitPrice,
       date: input.date,
-      reference: input.reference,
     })
     if (purchase) refreshStore()
   }
@@ -132,7 +131,6 @@ export function App() {
       quantity: input.quantity,
       sellingPrice: input.unitPrice,
       date: input.date,
-      reference: input.reference,
     })
     if (!sale) return false
     refreshStore()

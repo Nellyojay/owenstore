@@ -2,6 +2,7 @@ import { store } from '../data/store'
 import type { Sale } from '../data/types'
 import { calculateSaleTotal } from '../utils/calculations'
 import { generateId } from '../utils/generateId'
+import { generateReferenceCode } from '../utils/generateReferenceCode'
 import { recordStockMovement } from './inventoryService'
 
 export type NewSale = {
@@ -9,7 +10,6 @@ export type NewSale = {
   quantity: number
   sellingPrice: number
   date: string
-  reference: string
 }
 
 export function createSale(input: NewSale): Sale | null {
@@ -35,7 +35,7 @@ export function createSale(input: NewSale): Sale | null {
   const sale: Sale = {
     id: generateId('sale'),
     date: input.date,
-    reference: input.reference,
+    reference: generateReferenceCode('SALE', store.sales.map((sale) => sale.reference)),
     status: 'completed',
     items,
     total: calculateSaleTotal(items),

@@ -39,7 +39,7 @@ export type RestockPurchase = {
 
 export type RestockInput = Pick<
   RestockPurchase,
-  'itemId' | 'quantity' | 'unitPrice' | 'date' | 'reference'
+  'itemId' | 'quantity' | 'unitPrice' | 'date'
 >
 
 export type SaleRecord = {
@@ -54,7 +54,7 @@ export type SaleRecord = {
   reference: string
 }
 
-export type SaleInput = Pick<SaleRecord, 'itemId' | 'quantity' | 'unitPrice' | 'date' | 'reference'>
+export type SaleInput = Pick<SaleRecord, 'itemId' | 'quantity' | 'unitPrice' | 'date'>
 
 export type AppOutletContext = {
   inventory: InventoryItem[]
